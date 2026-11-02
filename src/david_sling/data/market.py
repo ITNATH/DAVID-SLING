@@ -26,7 +26,7 @@ from david_sling.core.schemas import (
     TradeFlow,
 )
 from david_sling.core.utils import utc_now
-from david_sling.data.integrity import validate_candle, validate_tick
+from david_sling.data.integrity import OUTLIER_Z, validate_candle, validate_tick
 from david_sling.data.store import DataStore
 from david_sling.services.buses import EventBus
 
@@ -134,7 +134,18 @@ class CandleBuilder:
         vol = {"trend_up": 0.00025, "trend_down": 0.00025, "range": 0.00012}[state.regime]
         shock = state.rng.gauss(0.0, vol)
         prev = state.price
-        state.price = max(spec.tick_size, state.price * math.exp(drift + shock))
+        new_price = max(spec.tick_size, state.price * math.exp(drift + shock))
+        # clamp the step to a sane z-score vs recent moves so the integrity guard
+        # never trips on the simulator's own gaussian noise (early ticks have ~0 sd)
+        if len(state.recent_moves) >= 5:
+            mean = sum(state.recent_moves) / len(state.recent_moves)
+            var = sum((m - mean) ** 2 for m in state.recent_moves) / len(state.recent_moves)
+            sd = max(var ** 0.5, spec.tick_size * 4)
+            move = new_price - prev
+            max_move = (OUTLIER_Z - 0.5) * sd
+            if abs(move - mean) > max_move:
+                new_price = prev + mean + math.copysign(max_move, move - mean)
+        state.price = new_price
         ts = (state.last_tick.ts + advance_ts) if (state.last_tick and advance_ts) else SIM_EPOCH
         spread = spec.spread_points * spec.tick_size
         mid = state.price
