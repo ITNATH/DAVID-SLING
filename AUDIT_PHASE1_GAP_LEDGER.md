@@ -55,3 +55,34 @@ live sim server (gates: pytest 33/33, ruff clean, mypy clean 106 files, architec
 - Preview URL: https://8000-ijfb5yja4427urqpyjecp.e2b.app  (UI at `/`, Swagger at `/docs`, WS at `/ws/telemetry`)
 - Access: no credentials required in sim mode (`DAVID_SLING_API_TOKEN` unset → dev-open). Set that env var to require `Authorization: Bearer <token>`.
 - Last health snapshot: ticks 7,768 · ledger 166 entries chain_ok=true · all 15 layer health checks OK · 10 signals routed · risk gate live (session cap 1.50% enforced — manual over-exposure correctly vetoed at 95.4% > 60% exposure guard during testing).
+
+---
+
+# Deep Pass #2 — extended Gap & Lapse Ledger (sub-micro logic, failure isolation, numeric precision)
+Date: 2026-11-02 · Scope: blueprint module-level parity (146 core files + domain trees), loop isolation,
+PnL/precision arithmetic, rescan taxonomy, monitoring/drift, halt semantics, persistence, API hardening.
+
+| # | Sev | Finding | Evidence |
+|---|---|---|---|
+| G11 | **HIGH** | **FX tick_value semantics inconsistent → PnL misstated ~10x.** `_pnl = (exit-entry)/tick_size * tick_value * volume`. EURUSD/GBPUSD config `tick_value: 10.0` is a *per-pip* value but is applied *per-tick* (0.00001) → PnL **overstated 10x** (sim 7.00 vs real ~0.70 on +100 ticks/0.1 lot). USDJPY `tick_value: 6.67` per-pip applied per 0.001 tick → **understated 10x** (sim 0.43 vs real ~6.67). XAUUSD (per-tick 1.0) is correct. Sizing `risk_based_lot` divides by the same tick_value → FX lot sizes off 10x in the opposite direction. | measured: `broker/simulated.py::_pnl`, `config/symbols.yaml` |
+| G12 | MED | **TMS loop and news loop have no try/except** — one exception silently kills the loop task (macro failure-isolation gap). Pipeline and telemetry loops ARE guarded. | `bootstrap/runtime.py::_tms_loop` (no try), `_news_loop` (no try) vs `_pipeline_loop`/`_telemetry_loop` (guarded) |
+| G13 | MED | **Emergency Halt missing**: blueprint quick_action_toolbar has Halt + `emergency_halt_dialog` (multi-confirmation). `RiskState.halted` exists but is never set; no API endpoint; panic-flatten only closes books, doesn't stop new entries. | `risk/gate.py` (`halted` dead), no `/api/trade/halt` |
+| G14 | MED | **Rescan taxonomy incomplete**: blueprint defines 9 triggers (initial, post_exit, thesis_failure, fakeout, spike, scenario, fusion, engine, evidence snapshot). Code wires only post_exit + manual. Also rescan budget overrun increments a counter but the promised WARNING alert is never emitted (docstring lies). | `rescan/engine.py`, call sites only in `runtime.py:252`, `facade.initiate_rescan` |
+| G15 | LOW | `PortfolioExposure.concentration_ok` is dead code — risk gate re-implements exposure math inline. | `portfolio/exposure.py:36` never called |
+| G16 | LOW | Concept-drift detection absent (blueprint `concept_drift_detector.py` + `drift_proposal_engine.py`); only edge-decay proposals exist, correctly non-mutating (immutable learning boundary respected). | `monitoring_learning/engine.py` |
+| G17 | LOW | No import-time constitutional enforcement (blueprint `operating_principles.py` / `architecture_integrity_check` at import time); law enforcement is an external script only. | `core/__init__.py` empty of checks |
+| G18 | LOW | Journal retention (`retention_days: 90`) configured but never enforced (no pruning); external alert channels (telegram/email/whatsapp/webhook) have config but no delivery path (no alert-gateway). | `journal/engine.py`, `alerts/engine.py`, `config/alerts/alert_channels.yaml` |
+| G19 | LOW | `data/{ticks,ohlcv,orderbook,news,synthetic}/` exist but are empty — sim market data lives only in memory; replay regenerates synthetically instead of reading stored data. | `data/` |
+| G20 | LOW | No CORS allowlist (preview is same-origin so OK today, but no explicit preview-host allowlist); static mount has no cache headers. | `api/app.py` |
+| G21 | LOW | Pipeline `seen`-bookkeeping contains a convoluted dead conditional (`if key in seen and last.close == m1[-2].close if len(m1)>1 else False`) — harmless, confusing. | `bootstrap/runtime.py` `_pipeline_loop` |
+| G22 | LOW | Partial close can leave a dust residual below min_lot (`round(vol,8)`, no min-residual rule in broker close). | `position_management/tms.py::partial_close`, `broker/simulated.py::close` |
+| G23 | LOW | `asyncio.get_event_loop().create_task` (deprecated) in `_submit_order` and `_tms_loop`; also ugly `__import__("david_sling.core.schemas", ...)` inline imports for AlertLevel. | `bootstrap/runtime.py:186,194,243-249` |
+| G24 | INFO | L10 submodules (technical_signal_adapter / signal_route_notifier / downstream_contract) consolidated into `execution_boundary/firewall.py` — functionally present, structurally merged. | `execution_boundary/` |
+| G25 | INFO | Verified GOOD: JPY profit-currency conversion uses live USDJPY price; slippage modeled on fills; spread charged at fill and close; Decimal lot quantization; per-currency + total exposure limits; day-start balance + drawdown guard; precision Tier 1–4 present. | `broker/simulated.py`, `risk/gate.py`, `precision/` |
+
+## Updated priority order
+1. **G11 (HIGH, numeric correctness)** — normalize tick_value to per-tick-per-lot (EURUSD/GBPUSD 1.0, USDJPY ≈0.667) in `config/symbols.yaml`, add a broker PnL golden test per symbol vs real-world values, re-verify sizing.
+2. **G12 (MED)** — wrap `_tms_loop` and `_news_loop` bodies in try/except → alert + continue (mirror pipeline loop).
+3. **G13 (MED)** — implement halt/resume: set `RiskState.halted`, `/api/trade/halt` + `/resume` endpoints, gate checks halted first, UI emergency-halt button with confirm dialog.
+4. **G14 (MED)** — wire remaining rescan triggers (spike, scenario transition, fusion conflict, engine invalidation, fakeout) + emit WARNING on budget overrun.
+5. G1, G2 (from pass 1), then G15–G23 lows, then Milestone B.
