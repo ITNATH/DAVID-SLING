@@ -294,6 +294,21 @@ class MultiTradeIntent(StrictModel):
     ts: datetime
 
 
+class ExecutionReport(StrictModel):
+    """Broker execution report (order fill) - L12 contract."""
+
+    intent_id: str
+    position_id: str = ""
+    symbol: str = ""
+    side: str = ""
+    volume: float = 0.0
+    fill_price: float = 0.0
+    status: str = "FILLED"
+    slippage_points: float = 0.0
+    spread_cost: float = 0.0
+    ts: datetime
+
+
 class PositionState(StrictModel):
     position_id: str
     symbol: str

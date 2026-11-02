@@ -58,5 +58,7 @@ class IntelligenceEngine:
         add("momentum", "roc_m1", fs.roc_m1)
         add("momentum", "macd_hist_m1", fs.macd_hist_m1)
         add("volume", "volume_z_m1", fs.volume_z_m1)
+        add("fibonacci", "retracement_h4", fs.fib_retracement_h4 if fs.fib_retracement_h4 is not None else 0.0,
+            "golden_zone_long" if fs.ote_long_h4 else ("golden_zone_short" if fs.ote_short_h4 else ""))
         add("orderflow", "delta_m1", fs.delta_m1)
         return obs

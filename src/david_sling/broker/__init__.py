@@ -1,6 +1,5 @@
-"""L12 broker - Broker Adapter Domain (simulated + protocol adapter registry)."""
-from __future__ import annotations
+"""L12 broker adapters - simulated (default) + MT5/MT4/cTrader/FIX live."""
+from david_sling.broker.adapter import BrokerAdapter, BrokerRegistry
+from david_sling.broker.simulated import SimulatedBrokerAdapter
 
-from .simulated import SimulatedBrokerAdapter
-
-__all__ = ["SimulatedBrokerAdapter"]
+__all__ = ["BrokerAdapter", "BrokerRegistry", "SimulatedBrokerAdapter"]

@@ -39,7 +39,7 @@ def test_api_endpoints(runtime):
     assert client.get("/api/mission-control/overview").status_code == 200
     ov = client.get("/api/mission-control/overview").json()
     assert ov["brand"] == "DAVID SLING"
-    assert len(ov["health"]) == 15
+    assert len(ov["health"]) == 16  # 15 layers + feed_watchdog
     assert client.get("/api/strategies").json()["count"] == 52
     assert client.get("/api/engines").status_code == 200
     assert client.get("/api/market/EURUSD/candles?tf=M1").status_code == 200

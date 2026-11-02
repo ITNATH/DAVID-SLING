@@ -9,24 +9,17 @@ this interface (see services/execution-bridge in later increments).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 
+from david_sling.broker.adapter import BrokerAdapter
 from david_sling.core.errors import ExecutionError
-from david_sling.core.schemas import OrderIntent, OrderSide, PositionState, SymbolSpec
+from david_sling.core.schemas import (
+    ExecutionReport,
+    OrderIntent,
+    OrderSide,
+    PositionState,
+    SymbolSpec,
+)
 from david_sling.core.utils import new_id, price_quantize, to_decimal, utc_now
-
-
-@dataclass
-class ExecutionReport:
-    intent_id: str
-    position_id: str
-    symbol: str
-    side: str
-    volume: float
-    fill_price: float
-    slippage_points: float
-    spread_cost: float
-    ts: datetime
 
 
 @dataclass
@@ -41,7 +34,7 @@ class Account:
         return self.balance  # updated by mark-to-market externally
 
 
-class SimulatedBrokerAdapter:
+class SimulatedBrokerAdapter(BrokerAdapter):
     def __init__(self, specs: dict[str, SymbolSpec], balance: float = 100_000.0,
                  currency: str = "USD", leverage: float = 50.0, slippage_points: float = 0.5) -> None:
         self.specs = specs
@@ -49,6 +42,13 @@ class SimulatedBrokerAdapter:
         self.slippage_points = slippage_points
         self.reports: list[ExecutionReport] = []
         self._prices: dict[str, float] = {}
+        self._connected = True
+
+    def connect(self) -> None:
+        self._connected = True
+
+    def disconnect(self) -> None:
+        self._connected = False
 
     # ------------------------------------------------- capability discovery
     def capability(self, symbol: str) -> SymbolSpec:

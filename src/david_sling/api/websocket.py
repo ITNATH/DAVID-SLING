@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from contextlib import suppress
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -25,5 +26,8 @@ async def telemetry_ws(websocket: WebSocket) -> None:
                 await websocket.send_text(json.dumps({"topic": "ping", "ts": runtime.time.now().isoformat()}))
     except WebSocketDisconnect:
         pass
+    except Exception as exc:  # never let a socket failure kill the server
+        with suppress(Exception):
+            await runtime.alerts.emit("WARNING", f"websocket error: {exc}", channel="websocket")
     finally:
         await runtime.telemetry.unsubscribe(queue)

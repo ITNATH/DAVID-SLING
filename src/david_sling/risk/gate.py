@@ -57,10 +57,23 @@ class RiskGate:
         self.state.day_start_balance = balance
         self.state.peak_equity = max(self.state.peak_equity, balance)
 
+    def halt(self, reason: str) -> None:
+        """Emergency halt: veto every new entry until resumed."""
+        self.state.halted = True
+        self.state.halt_reason = reason
+
+    def resume(self) -> None:
+        self.state.halted = False
+        self.state.halt_reason = ""
+
     def evaluate(self, intent: OrderIntent, *, account: dict, open_positions: list[dict],
                  symbol_exposure: dict[str, float], atr_now: float, atr_avg: float,
                  spread_now: float, spread_avg: float, news_active: bool = False) -> RiskDecision:
         reasons: list[str] = []
+        if self.state.halted:
+            return RiskDecision(approved=False,
+                                reasons=(f"EMERGENCY HALT active: {self.state.halt_reason}",),
+                                adjusted_volume=0.0, risk_amount=0.0)
         equity = float(account.get("equity", 0.0))
         balance = float(account.get("balance", 0.0))
         if self.state.day_start_balance <= 0:

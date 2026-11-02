@@ -17,10 +17,13 @@ from david_sling.services.telemetry_service import TelemetryService
 
 
 class AlertEngine:
-    def __init__(self, bus: EventBus, telemetry: TelemetryService, *, throttle_per_minute: int = 30) -> None:
+    def __init__(self, bus: EventBus, telemetry: TelemetryService, *, throttle_per_minute: int = 30,
+                 channels: dict | None = None) -> None:
         self.bus = bus
         self.telemetry = telemetry
         self.throttle_per_minute = throttle_per_minute
+        self.channels: dict = channels or {}
+        self.outbox: list[dict] = []  # external deliveries awaiting/failed transport
         self.alerts: list[AlertEvent] = []
         self._sent_times: deque[float] = deque()
         self._lock = asyncio.Lock()
@@ -45,7 +48,42 @@ class AlertEngine:
         if not throttled:
             await self.telemetry.emit("alert", event.model_dump(mode="json"))
         await self.bus.publish("alert.dispatched", event.model_dump(mode="json"))
+        await self._deliver_external(event)
         return event
+
+    async def _deliver_external(self, event) -> None:
+        """Alert gateway: routes to enabled external channels from
+        config/alerts/alert_channels.yaml. Transport failures are isolated and
+        recorded in the outbox - they never break the alert path."""
+        import os
+
+        ch = self.channels.get(event.channel)
+        if not ch or not ch.get("enabled"):
+            return
+        payload = {"alert_id": event.alert_id, "level": event.level.value, "message": event.message,
+                   "ts": event.ts.isoformat()}
+        try:
+            if event.channel == "webhook":
+                url = os.environ.get("DAVID_SLING_WEBHOOK_URL")
+                if url:
+                    import httpx
+
+                    async with httpx.AsyncClient(timeout=5.0) as client:
+                        await client.post(url, json=payload)
+            elif event.channel == "telegram":
+                token = os.environ.get("DAVID_SLING_TELEGRAM_TOKEN")
+                chat = os.environ.get("DAVID_SLING_TELEGRAM_CHAT_ID")
+                if token and chat:
+                    import httpx
+
+                    async with httpx.AsyncClient(timeout=5.0) as client:
+                        await client.post(f"https://api.telegram.org/bot{token}/sendMessage",
+                                          json={"chat_id": chat, "text": event.message})
+            else:  # email / whatsapp: queued in outbox for the ops mailer
+                self.outbox.append({"channel": event.channel, **payload})
+        except Exception as exc:
+            self.outbox.append({"channel": event.channel, "error": str(exc), **payload})
+            await self.bus.publish("alert.delivery_failed", {"channel": event.channel, "error": str(exc)})
 
     # ------------------------------------------------------- event handlers
     async def _on_signal(self, ticket: dict) -> None:

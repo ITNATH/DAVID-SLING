@@ -27,6 +27,7 @@ from david_sling.core.schemas import (
 )
 from david_sling.core.utils import utc_now
 from david_sling.data.integrity import validate_candle, validate_tick
+from david_sling.data.store import DataStore
 from david_sling.services.buses import EventBus
 
 SIM_EPOCH = datetime(2026, 1, 5, 0, 0, 0, tzinfo=UTC)  # Monday
@@ -150,8 +151,10 @@ class CandleBuilder:
 class MarketSimulator:
     """Canonical feed router: produces tick / candle.closed / orderbook / trade_flow."""
 
-    def __init__(self, specs: list[SymbolSpec], bus: EventBus, *, speed: float = 30.0, seed: int = 7) -> None:
+    def __init__(self, specs: list[SymbolSpec], bus: EventBus, *, speed: float = 30.0, seed: int = 7,
+                 store: DataStore | None = None) -> None:
         self.bus = bus
+        self.store = store
         self.clock = SimClock(speed=speed)
         self.builder = CandleBuilder()
         self.states: dict[str, SymbolSimState] = {}
@@ -176,6 +179,13 @@ class MarketSimulator:
                     continue
                 self.tick_count += 1
                 closed = self.builder.add_tick(tick)
+                if self.store is not None:
+                    try:
+                        self.store.append_tick(tick)
+                        for c in closed:
+                            self.store.append_candle(tick.symbol, c.tf.value, c)
+                    except Exception:
+                        pass  # storage is best-effort; feed never dies on disk errors
                 await self.bus.publish("tick", tick)
                 for c in closed:
                     await self.bus.publish("candle.closed", c)
@@ -199,6 +209,13 @@ class MarketSimulator:
                         continue
                     self.tick_count += 1
                     closed = self.builder.add_tick(tick)
+                    if self.store is not None:
+                        try:
+                            self.store.append_tick(tick)
+                            for c in closed:
+                                self.store.append_candle(tick.symbol, c.tf.value, c)
+                        except Exception:
+                            pass  # storage is best-effort; the feed never dies on disk errors
                     await self.bus.publish("tick", tick)
                     for c in closed:
                         await self.bus.publish("candle.closed", c)

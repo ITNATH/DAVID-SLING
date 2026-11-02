@@ -160,11 +160,11 @@ def _s17(fs: FeatureSet, d: Direction) -> SetupCandidate | None:  # HTF CHoCH/BO
         return _mk(_VAULT["S17"], fs, d, sl_atr=2.0, rr=3.0, conf=0.75)
     return None
 
-def _s18(fs: FeatureSet, d: Direction) -> SetupCandidate | None:  # OTE 61.8-78.6 (proxy: deep pullback to ema50)
-    if d == "long" and fs.trend_h4 > 0 and fs.price <= fs.ema50_h4 * 1.001 and fs.rsi_m1 < 45:
-        return _mk(_VAULT["S18"], fs, d, sl_atr=2.5, rr=3.5, conf=0.7)
-    if d == "short" and fs.trend_h4 < 0 and fs.price >= fs.ema50_h4 * 0.999 and fs.rsi_m1 > 55:
-        return _mk(_VAULT["S18"], fs, d, sl_atr=2.5, rr=3.5, conf=0.7)
+def _s18(fs: FeatureSet, d: Direction) -> SetupCandidate | None:  # OTE: Golden Zone 61.8-78.6% retracement
+    if d == "long" and fs.trend_h4 > 0 and fs.ote_long_h4 and fs.rsi_m1 < 50:
+        return _mk(_VAULT["S18"], fs, d, sl_atr=2.5, rr=3.5, conf=0.8)
+    if d == "short" and fs.trend_h4 < 0 and fs.ote_short_h4 and fs.rsi_m1 > 50:
+        return _mk(_VAULT["S18"], fs, d, sl_atr=2.5, rr=3.5, conf=0.8)
     return None
 
 def _s19(fs: FeatureSet, d: Direction) -> SetupCandidate | None:  # quasimodo

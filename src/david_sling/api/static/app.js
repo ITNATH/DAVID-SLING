@@ -87,6 +87,13 @@ document.querySelectorAll("[data-batch]").forEach(b => b.addEventListener("click
 }));
 $("btn-be-all").addEventListener("click", () => api("/api/trade/breakeven-all").then(r => $("trade-result").textContent = JSON.stringify(r)));
 $("btn-panic").addEventListener("click", () => api("/api/trade/panic-flatten", {}).then(r => $("trade-result").textContent = "🚨 " + JSON.stringify(r)));
+$("btn-halt").addEventListener("click", () => {
+  const reason = prompt("Emergency halt reason:", "operator emergency halt");
+  if (reason === null) return;
+  if (!confirm("EMERGENCY HALT: veto ALL new entries until resumed?")) return;
+  api("/api/trade/halt", { reason }).then(r => $("trade-result").textContent = "⛔ " + JSON.stringify(r));
+});
+$("btn-resume").addEventListener("click", () => api("/api/trade/resume", {}).then(r => $("trade-result").textContent = "▶ " + JSON.stringify(r)));
 
 /* ---------------- rendering ---------------- */
 function renderTelemetry(a) {

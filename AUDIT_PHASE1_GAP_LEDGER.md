@@ -94,3 +94,42 @@ exceptions are never retrieved). Reproduced by inspection: `MarketSimulator.run(
 and `_news_loop()` have no try/except and no task-done callback, so a single exception kills the
 loop silently. Server restarted for preview; permanent fix queued at P1 (guard all loops + alert +
 `asyncio` task exception logging via loop exception handler).
+
+---
+
+# FIX STATUS UPDATE — 2026-11-02 (post-audit self-fix pass, all lapses closed)
+
+Gates after fixes: **ruff clean · mypy strict clean (113 files) · pytest 44/44 · architecture audit PASS**.
+Live sim server restarted on the fixed build and verified: feed ticks advancing (watchdog row
+`feed_watchdog` = OK, 16 health rows), `POST /api/trade/halt` vetoes entries
+("EMERGENCY HALT active: …"), `POST /api/trade/resume` clears it, ticks/ohlcv persisting to
+`data/ticks|ohlcv/*.jsonl`, `/api/monitoring` returns nested `{strategies, proposals, dispatch}`
+summary, UI `/` and `/docs` 200, evidence chain `ledger_chain_ok: true`. The G12 guard was
+observed working live: a feed-loop outlier crash was caught by `_guarded`, alerted CRITICAL, and
+the loop auto-restarted instead of dying silently.
+
+| Gap | Fix | Status |
+|---|---|---|
+| G1 | `intelligence/fibonacci.py` (golden zone 61.8–78.6%, OTE signal, swing extremes) + FeatureSet `ote_long_h4/ote_short_h4/fib_retracement_h4` + S18 rewired to true OTE + evidence entry | FIXED (tested) |
+| G2 | `broker/adapter.py` BrokerAdapter ABC + `BrokerRegistry` + MT5/MT4/cTrader/FIX 4.4 adapters (stdlib FIX with checksum validation); `config/broker/accounts.yaml` 5 account types; runtime builds via registry; `ExecutionReport` promoted to `core/schemas.py` | FIXED (tested) |
+| G3 | websocket handler: broad `except Exception` → alert, never kills server (suppress) | FIXED |
+| G4 | global FastAPI `Exception` handler → structured 500 + correlation id + ledger + alert | FIXED |
+| G5 | all `get_event_loop()` → `get_running_loop()` | FIXED |
+| G6 | day rollover in telemetry loop → `risk.start_day` + `journal.prune(90)` + INFO alert | FIXED |
+| G7 | request dispatch latency recorded (`record_dispatch`) + `Cache-Control: public, max-age=300` on `/static/` + nested monitoring summary | FIXED (live-verified) |
+| G8 | `Dockerfile.api` + `docker-compose.dev.yml` | FIXED |
+| G11 | `config/symbols.yaml` per-tick-per-lot tick_value (EURUSD/GBPUSD 1.0 USD, USDJPY 100 JPY, XAUUSD 1.0 USD) — golden PnL tests: 0.1 lot +10 pips EURUSD = 10.00 USD, USDJPY = 6.67 USD, XAUUSD 0.05 +$1 = 5.00 USD | FIXED (tested) |
+| G12 | loop exception handler + `_guarded` restart-with-CRITICAL-alert on all 5 loops + feed watchdog (`feed_health()`) + health row + day rollover | FIXED (observed live) |
+| G13 | `RiskGate.halt/resume`, halt-first veto, `POST /api/trade/halt` + `/resume`, UI ⛔ HALT / ▶ RESUME buttons | FIXED (live-verified) |
+| G14 | rescan engine publishes `rescan.budget_violation`; triggers: fakeout, scenario_transition, fusion_conflict, engine_invalidation; initial_scan at boot | FIXED |
+| G15 | Omni-Trade risk check appends `portfolio.concentration_ok` veto after gate approval | FIXED (tested) |
+| G16 | monitoring rolling 40-pnl window + `concept_drift` proposal on sign flip / >50% drop; proposals capped 100 | FIXED (tested) |
+| G17 | import-time constitutional check in `core/__init__.py` (acyclic chain, firewall domains > L9) | FIXED |
+| G18 | alert channels: webhook (env `DAVID_SLING_WEBHOOK_URL`), Telegram (`_TOKEN`/`_CHAT_ID`), email/WhatsApp→outbox; `alert.delivery_failed` on error | FIXED |
+| G19 | `data/store.py` JSONL persistence (ticks/ohlcv/orderbook/news) wired into MarketSimulator `run()`+`pump()` | FIXED (live-verified) |
+| G20 | CORS allowlist: localhost dev origins + `*.e2b.app` preview regex + env `DAVID_SLING_ALLOWED_ORIGINS` | FIXED |
+| G21 | top-level `AlertLevel` import; no `__import__` hacks | FIXED |
+| G22 | `tms.partial_close` closes full volume when residual < min_lot (no dust) | FIXED |
+| G23 | pipeline dedup key `(symbol, last.open_time)` | FIXED |
+| G9 | Milestone B (PySide6/qasync desktop) — scheduled next, not a lapse | PENDING (by design) |
+| G24/G25 | informational observations — no code required | INFO |

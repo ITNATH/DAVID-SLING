@@ -1,5 +1,9 @@
 broker:
-  default: simulated
+  default: simulated          # simulated | mt5 | mt4 | ctrader | fix
   accounts:
     simulated: { type: simulated, balance: 100000.0, currency: USD, leverage: 50 }
+    mt5:       { type: mt5,  balance: 100000.0, currency: USD, leverage: 50 }   # creds: DAVID_SLING_MT5_*
+    mt4:       { type: mt4,  balance: 100000.0, currency: USD, leverage: 50 }   # creds: DAVID_SLING_MT4_*
+    ctrader:   { type: ctrader, balance: 100000.0, currency: USD, leverage: 50 }# creds: DAVID_SLING_CTRADER_*
+    fix:       { type: fix,  host: 127.0.0.1, port: 9878, sender_comp_id: DAVIDSLING, target_comp_id: BROKER }
   order_types: [MARKET, LIMIT, STOP]

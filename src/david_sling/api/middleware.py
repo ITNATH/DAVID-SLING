@@ -16,4 +16,9 @@ class LatencyCorrelationMiddleware(BaseHTTPMiddleware):
         elapsed_ms = (time.perf_counter() - start) * 1000.0
         response.headers["X-Correlation-ID"] = request.state.correlation_id
         response.headers["X-Process-Time-ms"] = f"{elapsed_ms:.3f}"
+        if request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "public, max-age=300"
+        rt = getattr(request.app.state, "runtime", None)
+        if rt is not None:
+            rt.monitoring.record_dispatch(elapsed_ms)  # <1ms dispatch budget tracked
         return response

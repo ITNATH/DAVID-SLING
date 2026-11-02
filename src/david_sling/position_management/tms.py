@@ -116,6 +116,8 @@ class TradeManagementLifecycle:
         if pos is None:
             return None
         vol = round(pos.volume * pct, 8)
+        if 0 < pos.volume - vol < self.specs[pos.symbol].min_lot:
+            vol = pos.volume  # never leave a sub-min-lot dust residual
         if vol <= 0:
             return None
         _, pnl, swap = self.broker.close(position_id, volume=vol)

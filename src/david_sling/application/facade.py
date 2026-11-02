@@ -132,6 +132,16 @@ class ServiceFacade:
         return self.rt.control_panel.change(payload["key"], payload["value"],
                                             actor=payload.get("actor", "operator"))
 
+    def halt_trading(self, reason: str = "operator emergency halt") -> dict:
+        self.rt.risk.halt(reason)
+        self.rt.ledger.append("risk.halt", {"reason": reason})
+        return {"halted": True, "reason": reason}
+
+    def resume_trading(self) -> dict:
+        self.rt.risk.resume()
+        self.rt.ledger.append("risk.resume", {})
+        return {"halted": False}
+
     def initiate_rescan(self, payload: dict) -> dict:
         ev = self.rt.rescan.rescan(payload["symbol"].upper(), payload.get("reason", "manual"))
         return dict(ev.model_dump(mode="json"))

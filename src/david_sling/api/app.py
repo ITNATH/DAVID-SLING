@@ -35,12 +35,45 @@ def create_app(runtime) -> FastAPI:
     app.state.runtime = runtime
     app.add_middleware(LatencyCorrelationMiddleware)
 
+    # CORS: explicit allowlist - localhost dev + the Arena preview host pattern
+    import os
+
+    from fastapi.middleware.cors import CORSMiddleware
+
+    origins = ["http://localhost:8000", "http://127.0.0.1:8000", "http://localhost:3000"]
+    origins += [o.strip() for o in os.environ.get("DAVID_SLING_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_origin_regex=r"https://\d+-[a-z0-9]+\.e2b\.app",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     @app.exception_handler(DavidSlingError)
     async def david_error_handler(request: Request, exc: DavidSlingError):
         from david_sling.api.serialization import ORJSONResponse
 
         return ORJSONResponse({"error": type(exc).__name__, "message": exc.message,
-                               "context": exc.context}, status_code=400)
+                               "context": exc.context,
+                               "correlation_id": getattr(request.state, "correlation_id", None)}, status_code=400)
+
+    @app.exception_handler(Exception)
+    async def unhandled_error_handler(request: Request, exc: Exception):
+        """Global boundary: structured 500 + ledger + alert; the macro-system never crashes."""
+        from david_sling.api.serialization import ORJSONResponse
+
+        rt = getattr(app.state, "runtime", None)
+        cid = getattr(request.state, "correlation_id", None)
+        if rt is not None:
+            try:
+                rt.ledger.append("api.error", {"path": request.url.path, "error": repr(exc), "cid": cid})
+                await rt.alerts.emit("WARNING", f"unhandled API error {request.url.path}: {exc!r}")
+            except Exception:
+                pass
+        return ORJSONResponse({"error": "InternalError", "message": str(exc), "correlation_id": cid},
+                              status_code=500)
 
     for r in (core.router, mission_control.router, trade_execution.router, market.router,
               analysis.router, audit.router, ws_router):

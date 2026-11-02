@@ -216,6 +216,9 @@ class FeatureSet:
     volume_z_m1: float = 0.0
     delta_m1: float = 0.0        # simulated orderflow delta (signed)
     news_repricing: bool = False
+    ote_long_h4: bool = False       # price inside 61.8-78.6% golden zone of the H4 up-swing
+    ote_short_h4: bool = False      # mirror for down-swing
+    fib_retracement_h4: float | None = None
     observations: list[dict] = field(default_factory=list)
 
     def trend_alignment(self) -> int:
@@ -280,6 +283,9 @@ def compute_features(symbol: str, ts: datetime, price: float, spread_points: flo
         m, s = mean(vols[:-1]), stdev(vols[:-1]) or 1e-9
         vz = (vols[-1] - m) / s
 
+    from david_sling.intelligence.fibonacci import ote_signal
+    trend_up_h4 = _trend(closes_h4) > 0 if h4 else True
+    ote = ote_signal(h4, trend_up_h4) if h4 else {"long_ote": False, "short_ote": False, "retracement": None}
     fs = FeatureSet(
         symbol=symbol, ts=ts, price=price, spread_points=spread_points, session=session,
         atr_m1=atr_m1, atr_h1=atr_h1, atr_pct_h1=atr_pct_h1,
@@ -302,5 +308,7 @@ def compute_features(symbol: str, ts: datetime, price: float, spread_points: flo
         volume_z_m1=round(vz, 3),
         delta_m1=round(mean(deltas[-20:]) if deltas else 0.0, 4),
         news_repricing=news_repricing,
+        ote_long_h4=bool(ote.get("long_ote")), ote_short_h4=bool(ote.get("short_ote")),
+        fib_retracement_h4=ote.get("retracement"),
     )
     return fs

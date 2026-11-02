@@ -99,6 +99,26 @@ async def trade_panic_flatten(request: Request):
     return result
 
 
+class HaltRequest(StrictModel):
+    reason: str = "operator emergency halt"
+
+
+@router.post("/halt")
+async def trade_halt(payload: HaltRequest, request: Request):
+    rt = get_runtime(request)
+    result = rt.facade.halt_trading(payload.reason)
+    await rt.telemetry.emit("trade.result", {"op": "HALT", **result})
+    return result
+
+
+@router.post("/resume")
+async def trade_resume(request: Request):
+    rt = get_runtime(request)
+    result = rt.facade.resume_trading()
+    await rt.telemetry.emit("trade.result", {"op": "RESUME", **result})
+    return result
+
+
 @router.post("/breakeven-all")
 async def trade_breakeven_all(request: Request):
     return get_runtime(request).facade.breakeven_all()

@@ -50,11 +50,19 @@ class MultiTradeOperationsEngine:
         """Per-leg risk check with per-symbol ATR/spread (never cross-symbol)."""
         exposure = self.portfolio.net_exposure(positions, self.specs)
         open_dicts = [p.model_dump() if hasattr(p, "model_dump") else p for p in positions]
-        return self.risk.evaluate(intent, account=account, open_positions=open_dicts,
-                                  symbol_exposure=exposure, atr_now=atr_now_fn(intent.symbol),
-                                  atr_avg=atr_avg_fn(intent.symbol),
-                                  spread_now=spread_now_fn(intent.symbol), spread_avg=spread_avg_fn(intent.symbol),
-                                  news_active=news_active)
+        decision = self.risk.evaluate(intent, account=account, open_positions=open_dicts,
+                                      symbol_exposure=exposure, atr_now=atr_now_fn(intent.symbol),
+                                      atr_avg=atr_avg_fn(intent.symbol),
+                                      spread_now=spread_now_fn(intent.symbol), spread_avg=spread_avg_fn(intent.symbol),
+                                      news_active=news_active)
+        if decision.approved:
+            from david_sling.risk.gate import RiskDecision
+
+            ok, probs = self.portfolio.concentration_ok(exposure, float(account.get("equity", 0.0)))
+            if not ok:
+                decision = RiskDecision(approved=False, reasons=tuple(decision.reasons) + tuple(probs),
+                                        adjusted_volume=0.0, risk_amount=decision.risk_amount)
+        return decision
 
     # ------------------------------------------------------------- single
     def single_trade(self, *, symbol: str, side: OrderSide, volume: float | None,

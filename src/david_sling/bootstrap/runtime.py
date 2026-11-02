@@ -9,18 +9,19 @@ DecisionPipeline (tick -> signal -> order):
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import random
 from collections import deque
+from contextlib import suppress
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 from david_sling.alerts.engine import AlertEngine
 from david_sling.awareness.engine import AwarenessEngine
-from david_sling.broker.simulated import SimulatedBrokerAdapter
 from david_sling.configuration.configuration_engine import ConfigurationEngine
 from david_sling.control_panel.panel import ControlPanel
-from david_sling.core.schemas import SignalStatus, Timeframe
+from david_sling.core.schemas import AlertLevel, SignalStatus, Timeframe
 from david_sling.core.utils import utc_now
 from david_sling.data.market import MarketSimulator
 from david_sling.data.state import MarketReconstruction
@@ -47,6 +48,7 @@ if TYPE_CHECKING:
     from david_sling.core.schemas import OrderIntent
     from david_sling.order_management.manager import ManagedOrder
     from david_sling.risk.gate import RiskDecision
+
 from david_sling.position_management.tms import TradeManagementLifecycle
 from david_sling.precision.engine import PrecisionEngine
 from david_sling.regime.classifier import RegimeClassifier
@@ -62,6 +64,8 @@ from david_sling.signal.engine import SignalEngine
 from david_sling.sizing.engine import SizingEngine
 from david_sling.strategies.vault import STRATEGY_VAULT
 from david_sling.validation.engine import ValidationEngine
+
+logger = logging.getLogger("david_sling.runtime")
 
 CORE_PARAMETERS = (
     "atr.m1", "atr.h1", "ema20.m1", "ema50.m1", "rsi.m1", "macd.hist.m1",
@@ -86,7 +90,7 @@ class Runtime:
         self.session = OperatorSession()
         self.control_panel = ControlPanel(self.config_engine, self.ledger, self.telemetry)
         self.journal = JournalEngine(self.ledger)
-        self.alerts = AlertEngine(self.bus, self.telemetry)
+        self.alerts = AlertEngine(self.bus, self.telemetry, channels=self.cfg.get("alerts", {}).get("channels", {}))
         self.monitoring = MonitoringEngine()
         self.params_registry = ParameterRegistry()
         for p in CORE_PARAMETERS:
@@ -111,7 +115,11 @@ class Runtime:
         self.precision = PrecisionEngine(self.cfg.get("precision_thresholds", {}),
                                          min_routed=float(self.cfg.get("precision_thresholds.min_routed_score", 0.55)))
         self.signal_engine = SignalEngine()
-        self.rescan = RescanEngine()
+        self.rescan = RescanEngine(self.bus)
+        self._last_feed_tick = 0
+        self._last_feed_ts: datetime | None = None
+        self._last_day: str | None = None
+        self._loop_exc_count = 0
         self.boundary = ExecutionBoundary()
         self.risk = RiskGate(self.cfg.get("risk", {}))
         self.sizing = SizingEngine(self.cfg.get("sizing", {}))
@@ -120,7 +128,12 @@ class Runtime:
             per_currency_pct=float(self.cfg.get("risk.exposure_policy.per_currency_exposure_limit_pct", 25.0)),
             total_pct=float(self.cfg.get("risk.exposure_policy.total_exposure_limit_pct", 60.0)))
         balance = float(os.environ.get("DAVID_SLING_ACCOUNT_BALANCE", self.cfg.get("broker.accounts.simulated.balance", 100000.0)))
-        self.broker = SimulatedBrokerAdapter({s.name: s for s in self.symbols.all()}, balance=balance)
+        from david_sling.broker.adapter import BrokerRegistry
+        bcfg = self.cfg.get("broker", {})
+        acct_name = bcfg.get("default", "simulated")
+        acct_cfg = dict(bcfg.get("accounts", {}).get(acct_name, {"type": "simulated"}))
+        acct_cfg.setdefault("balance", balance)
+        self.broker = BrokerRegistry.create(acct_cfg, {s.name: s for s in self.symbols.all()})
         self.risk.start_day(balance)
         self.order_manager = OrderManager(self.broker)
         self.tms = TradeManagementLifecycle(self.broker, {s.name: s for s in self.symbols.all()})
@@ -148,8 +161,8 @@ class Runtime:
 
     def _price(self, symbol: str) -> float:
         if self.sim is not None:
-            return self.sim.price(symbol)
-        return self.broker.price(symbol)
+            return float(self.sim.price(symbol))
+        return float(self.broker.price(symbol))
 
     def clock_now(self) -> datetime:
         return self.sim.clock.now() if self.sim else utc_now()
@@ -176,14 +189,14 @@ class Runtime:
         rows = self.pnl_calculator.compute(self.broker.account.positions)
         floating = self.pnl_calculator.total_net(rows)
         snap = self.broker.account_snapshot(floating)
-        return snap
+        return dict(snap)
 
     def _submit_order(self, intent: OrderIntent, decision: RiskDecision) -> ManagedOrder:
         order = self.order_manager.submit(intent, risk_approved=decision.approved,
                                           risk_reasons=decision.reasons,
                                           adjusted_volume=decision.adjusted_volume or None)
         if order.report is not None:
-            asyncio.get_event_loop().create_task(self.bus.publish("order.filled", {
+            asyncio.get_running_loop().create_task(self.bus.publish("order.filled", {
                 "symbol": intent.symbol, "side": intent.side.value, "volume": order.intent.volume,
                 "fill_price": order.report.fill_price}))
             self.journal.execution(intent.model_dump(mode="json"),
@@ -191,30 +204,76 @@ class Runtime:
                                    decision.to_dict())
             self.ledger.append("order.filled", {"intent": intent.intent_id, "fill": order.report.fill_price})
         else:
-            asyncio.get_event_loop().create_task(self.bus.publish("risk.veto", {"reasons": decision.reasons}))
+            asyncio.get_running_loop().create_task(self.bus.publish("risk.veto", {"reasons": decision.reasons}))
         return order
 
     # ------------------------------------------------------------- loops
     def start_feed(self) -> None:
         """Create the market feed (no background tasks) - used by backtests/tests."""
         if self.sim is None:
+            from david_sling.data.store import DataStore
+
+            store = DataStore("data") if getattr(self, "mode", "sim") == "sim" else None
             self.sim = MarketSimulator(self.symbols.all(), self.bus,
-                                       speed=float(self.cfg.get("system.feed_hz", 10)) * 3)
+                                       speed=float(self.cfg.get("system.feed_hz", 10)) * 3, store=store)
             self.bus.subscribe("trade_flow", self._on_trade_flow)
 
     async def start(self, feed: bool = True, loops: bool = True) -> None:
         self._running = True
+        with suppress(RuntimeError):
+            asyncio.get_running_loop().set_exception_handler(self._on_loop_exception)
         if feed:
             self.start_feed()
             if loops:
                 sim = self.sim
                 assert sim is not None
-                self._tasks.append(asyncio.create_task(sim.run()))
+                self._tasks.append(asyncio.create_task(self._guarded("feed", sim.run)))
+                for sym in self.symbols.symbols():
+                    self.rescan.rescan(sym, "initial_scan")
         if loops:
-            self._tasks.append(asyncio.create_task(self._tms_loop()))
-            self._tasks.append(asyncio.create_task(self._telemetry_loop()))
-            self._tasks.append(asyncio.create_task(self._pipeline_loop()))
-            self._tasks.append(asyncio.create_task(self._news_loop()))
+            self._tasks.append(asyncio.create_task(self._guarded("tms", self._tms_loop)))
+            self._tasks.append(asyncio.create_task(self._guarded("telemetry", self._telemetry_loop)))
+            self._tasks.append(asyncio.create_task(self._guarded("pipeline", self._pipeline_loop)))
+            self._tasks.append(asyncio.create_task(self._guarded("news", self._news_loop)))
+
+    async def _guarded(self, name: str, factory) -> None:
+        """Failure isolation: a crashed background loop is alerted and restarted,
+        never allowed to kill the macro-system silently."""
+        while self._running:
+            try:
+                await factory()
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                self._loop_exc_count += 1
+                logger.exception("background loop '%s' crashed - restarting", name)
+                await self._safe_alert(AlertLevel.CRITICAL,
+                                       f"background loop '{name}' crashed: {exc} - auto-restarted")
+                await asyncio.sleep(1.0)
+            else:
+                return
+
+    def _on_loop_exception(self, loop, context: dict) -> None:
+        self._loop_exc_count += 1
+        logger.error("unhandled asyncio exception: %s", context.get("message"), exc_info=context.get("exception"))
+        with suppress(RuntimeError):
+            asyncio.get_running_loop().create_task(
+                self._safe_alert(AlertLevel.CRITICAL, f"unhandled async exception: {context.get('message')}"))
+
+    async def _safe_alert(self, level: AlertLevel, message: str) -> None:
+        try:
+            await self.alerts.emit(level, message)
+        except Exception:
+            logger.exception("alert emission failed")
+
+    def feed_health(self) -> dict:
+        """Watchdog: feed is healthy only if ticks are advancing right now."""
+        if self.sim is None:
+            return {"healthy": False, "detail": "no feed", "tick_count": 0, "tick_age_s": None}
+        age = (utc_now() - self._last_feed_ts).total_seconds() if self._last_feed_ts else None
+        healthy = self._running and self.sim.tick_count > 0 and (age is None or age < 30.0)
+        return {"healthy": healthy, "tick_count": self.sim.tick_count,
+                "tick_age_s": round(age, 1) if age is not None else None}
 
     async def stop(self) -> None:
         self._running = False
@@ -242,11 +301,9 @@ class Runtime:
                     for trade in res.closed:
                         self.journal.exit(trade.__dict__)
                         self.ledger.append("position.closed", trade.__dict__)
-                        asyncio.get_event_loop().create_task(self.bus.publish("position.closed", trade.__dict__))
-                        asyncio.get_event_loop().create_task(self.alerts.emit(
-                            __import__("david_sling.core.schemas", fromlist=["AlertLevel"]).AlertLevel.INFO
-                            if trade.pnl >= 0 else
-                            __import__("david_sling.core.schemas", fromlist=["AlertLevel"]).AlertLevel.WARNING,
+                        asyncio.get_running_loop().create_task(self.bus.publish("position.closed", trade.__dict__))
+                        asyncio.get_running_loop().create_task(self.alerts.emit(
+                            AlertLevel.INFO if trade.pnl >= 0 else AlertLevel.WARNING,
                             f"CLOSED {trade.symbol} pnl={trade.pnl:.2f} reason={trade.reason}"))
                         self.monitoring.record_outcome(None, trade)
                         self.rescan.rescan(symbol, f"post_exit:{trade.reason}")
@@ -255,11 +312,22 @@ class Runtime:
     async def _telemetry_loop(self) -> None:
         while self._running:
             try:
+                if self.sim is not None:
+                    self._last_feed_tick = self.sim.tick_count
+                    self._last_feed_ts = utc_now()
+                today = utc_now().date().isoformat()
+                if self._last_day is None:
+                    self._last_day = today
+                elif today != self._last_day:
+                    self._last_day = today
+                    self.risk.start_day(self.broker.account.balance)
+                    self.journal.prune(retention_days=90)
+                    await self._safe_alert(AlertLevel.INFO,
+                                           "day rollover: risk day reset (day_start_balance), journal pruned to 90d")
                 snap = self.mission_control.overview()
                 await self.telemetry.emit("overview", snap)
             except Exception as exc:  # telemetry must never kill the loop
-                await self.alerts.emit(__import__("david_sling.core.schemas", fromlist=["AlertLevel"]).AlertLevel.WARNING,
-                                       f"telemetry error: {exc}")
+                await self._safe_alert(AlertLevel.WARNING, f"telemetry error: {exc}")
             await asyncio.sleep(0.5)
 
     async def _pipeline_loop(self) -> None:
@@ -272,11 +340,7 @@ class Runtime:
                     if not m1:
                         continue
                     last = m1[-1]
-                    if last.tick_count == 0 and last.open_time in seen:
-                        continue
                     key = (symbol, last.open_time)
-                    if key in seen and last.close == m1[-2].close if len(m1) > 1 else False:
-                        continue
                     if key in seen:
                         continue
                     seen.add(key)
@@ -326,6 +390,7 @@ class DecisionPipeline:
 
     def __init__(self, rt: Runtime) -> None:
         self.rt = rt
+        self._last_scenario: dict[str, str] = {}
 
     def candles_by_tf(self, symbol: str) -> dict:
         return {tf: self.rt.sim.candles(symbol, tf, limit=300) for tf in Timeframe} if self.rt.sim else {}
@@ -358,13 +423,22 @@ class DecisionPipeline:
         fs = self.features_only(symbol)
         if fs is None:
             return None
+        # fakeout rescan: liquidity sweep immediately rejected back inside the range
+        if (fs.sweep_up_m5 and fs.price < fs.ema20_m1) or (fs.sweep_dn_m5 and fs.price > fs.ema20_m1):
+            rt.rescan.rescan(symbol, "fakeout")
         regime = rt.regime.classify(fs)
         rt.awareness.update(fs, regime, rt.spread_now(symbol))
         scenario = rt.scenario_engine.classify(fs)
+        prev_sc = self._last_scenario.get(symbol)
+        if prev_sc is not None and prev_sc != scenario.scenario.value:
+            rt.rescan.rescan(symbol, f"scenario_transition:{prev_sc}->{scenario.scenario.value}")
+        self._last_scenario[symbol] = scenario.scenario.value
         hypothesis = rt.hypothesis.build(fs, scenario)
         grammar = rt.grammar.validate(fs, scenario)
         assert hypothesis.state is not None and grammar.valid is not None  # pipeline invariant
         fusion = rt.fusion.fuse(fs, self.candles_by_tf(symbol))
+        if fusion.conflicts > 2:
+            rt.rescan.rescan(symbol, f"fusion_conflict:{fusion.conflicts}")
         validation = rt.validation.evaluate(fs, scenario, fusion)
         rt.params.assert_no_silent_drops()
         ev = rt.ledger.append("decision.context", {
@@ -374,9 +448,13 @@ class DecisionPipeline:
         })
         candidates = rt.vault.evaluate(fs) if validation.passed else []
         signal = None
+        engine_rescanned = False
         for cand in candidates[:5]:
             route, engine_decision = rt.router.route(scenario, cand, validation, fusion)
             if route.engine == "NO_ROUTE" or engine_decision is None:
+                if validation.passed and not engine_rescanned:
+                    rt.rescan.rescan(symbol, "engine_invalidation")
+                    engine_rescanned = True
                 continue
             precision = rt.precision.grade(fs, validation, fusion)
             if not rt.precision.routable(precision):

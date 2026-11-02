@@ -29,8 +29,9 @@ class MissionControl:
         rt = self.rt
         ledger_ok = rt.ledger.verify_chain()
         params_ok = not rt.params.audit_no_silent_drops()
-        feed_ok = rt.sim is not None and rt.sim.tick_count > 0
-        rows = []
+        feed_ok = rt.sim is not None and rt.sim.tick_count > 0 and rt.feed_health()["healthy"]
+        rows = [{"domain": "feed_watchdog", "layer": "L2", "status": "OK" if rt.feed_health()["healthy"] else "DEGRADED",
+                 "healthy": rt.feed_health()["healthy"], "detail": rt.feed_health()}]
         for domain, layer in DOMAIN_HEALTH:
             ok = True
             if domain == "data_parameter":

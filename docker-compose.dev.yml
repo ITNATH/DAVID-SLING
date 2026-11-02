@@ -1,0 +1,18 @@
+# DAVID SLING - local development stack (API + hot-reloading telemetry)
+services:
+  david-sling-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    environment:
+      - DAVID_SLING_LEDGER_PATH=/app/storage/audit/evidence_ledger.jsonl
+      # - DAVID_SLING_API_TOKEN=change-me   # enable Bearer auth
+      # - DAVID_SLING_MT5_LOGIN/PASSWORD/SERVER  for live MT5
+    volumes:
+      - ./src:/app/src                 # hot reload in dev
+      - ./config:/app/config
+      - ./storage:/app/storage
+      - ./data:/app/data
+    command: ["python", "main.py", "--mode", "sim", "--host", "0.0.0.0", "--port", "8000"]
