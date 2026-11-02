@@ -86,3 +86,11 @@ PnL/precision arithmetic, rescan taxonomy, monitoring/drift, halt semantics, per
 3. **G13 (MED)** — implement halt/resume: set `RiskState.halted`, `/api/trade/halt` + `/resume` endpoints, gate checks halted first, UI emergency-halt button with confirm dialog.
 4. **G14 (MED)** — wire remaining rescan triggers (spike, scenario transition, fusion conflict, engine invalidation, fakeout) + emit WARNING on budget overrun.
 5. G1, G2 (from pass 1), then G15–G23 lows, then Milestone B.
+
+## Addendum — G12 OBSERVED LIVE
+After ~7,768 sim ticks the production sim server's background feed froze while HTTP stayed up
+(ticks constant across repeated /api/health polls; no error in uvicorn log because asyncio task
+exceptions are never retrieved). Reproduced by inspection: `MarketSimulator.run()`, `_tms_loop()`,
+and `_news_loop()` have no try/except and no task-done callback, so a single exception kills the
+loop silently. Server restarted for preview; permanent fix queued at P1 (guard all loops + alert +
+`asyncio` task exception logging via loop exception handler).
