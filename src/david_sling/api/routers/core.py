@@ -34,10 +34,8 @@ async def system(request: Request):
 
 @router.get("/security")
 async def security(request: Request):
-    return {"license": {"status": "ACTIVE", "type": "simulated-institutional",
-                        "entitlements": ["engines ABCD", "strategy_vault_52", "evidence_ledger", "multi_trade_ops"]},
-            "session": {"authenticated": True, "role": "master_admin"},
-            "token_required": bool(__import__("os").environ.get("DAVID_SLING_API_TOKEN"))}
+    rt = get_runtime(request)
+    return {"license": rt.license.status(), "session": rt.session.status()}
 
 
 @router.get("/configuration")

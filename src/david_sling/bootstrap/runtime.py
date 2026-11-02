@@ -19,6 +19,7 @@ from david_sling.alerts.engine import AlertEngine
 from david_sling.awareness.engine import AwarenessEngine
 from david_sling.broker.simulated import SimulatedBrokerAdapter
 from david_sling.configuration.configuration_engine import ConfigurationEngine
+from david_sling.control_panel.panel import ControlPanel
 from david_sling.core.schemas import SignalStatus, Timeframe
 from david_sling.core.utils import utc_now
 from david_sling.data.market import MarketSimulator
@@ -39,6 +40,8 @@ from david_sling.order_management.manager import OrderManager
 from david_sling.parameter.lifecycle import ParameterLifecycleManager
 from david_sling.parameter.registry import ParameterRegistry
 from david_sling.portfolio.exposure import PortfolioExposure
+from david_sling.security.license_engine import LicenseEngine
+from david_sling.security.session import OperatorSession
 
 if TYPE_CHECKING:
     from david_sling.core.schemas import OrderIntent
@@ -79,6 +82,9 @@ class Runtime:
         self.symbols = SymbolRegistry(self._load_symbols())
         ledger_path = os.environ.get("DAVID_SLING_LEDGER_PATH") or str(self.cfg.get("environment.ledger_path", "storage/audit/evidence_ledger.jsonl"))
         self.ledger = EvidenceLedger(ledger_path)
+        self.license = LicenseEngine(mode)
+        self.session = OperatorSession()
+        self.control_panel = ControlPanel(self.config_engine, self.ledger, self.telemetry)
         self.journal = JournalEngine(self.ledger)
         self.alerts = AlertEngine(self.bus, self.telemetry)
         self.monitoring = MonitoringEngine()

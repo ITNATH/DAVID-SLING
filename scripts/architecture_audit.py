@@ -42,7 +42,15 @@ def scan_imports() -> dict[str, set[str]]:
         pkg = rel.split("/") if (is_init and rel) else rel.split("/")[:-1]
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         targets: set[str] = set()
+        # type-checking-only imports are not runtime dependencies
+        skip_nodes: set[int] = set()
         for node in ast.walk(tree):
+            if isinstance(node, ast.If) and isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING":
+                for sub in ast.walk(node):
+                    skip_nodes.add(id(sub))
+        for node in ast.walk(tree):
+            if id(node) in skip_nodes:
+                continue
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     if alias.name.startswith("david_sling"):

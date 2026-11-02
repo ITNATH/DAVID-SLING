@@ -1,11 +1,9 @@
 """api/dependencies - dependency injection boundaries + optional bearer auth."""
 from __future__ import annotations
 
-import os
-
 from fastapi import Header, Request
 
-from david_sling.core.errors import SecurityError
+from david_sling.security.session import OperatorSession
 
 
 def get_runtime(request: Request):
@@ -13,9 +11,5 @@ def get_runtime(request: Request):
 
 
 async def require_token(authorization: str | None = Header(default=None)) -> None:
-    """If DAVID_SLING_API_TOKEN is configured, require it; otherwise dev-open."""
-    expected = os.environ.get("DAVID_SLING_API_TOKEN")
-    if not expected:
-        return
-    if authorization != f"Bearer {expected}":
-        raise SecurityError("invalid or missing API token")
+    """L1 security session gate: Bearer token required when DAVID_SLING_API_TOKEN is set."""
+    OperatorSession().verify(authorization)

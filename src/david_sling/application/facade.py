@@ -7,14 +7,17 @@ Commands arrive via the command bus (authorized + audited).
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
 
 from david_sling.core.schemas import OrderSide, OrderType
 from david_sling.mission_control.ops import MultiTradeOperationsEngine
 
+if TYPE_CHECKING:
+    from david_sling.bootstrap.runtime import Runtime
+
 
 class ServiceFacade:
-    def __init__(self, runtime: Any) -> None:
+    def __init__(self, runtime: Runtime) -> None:
         self.rt = runtime
 
     # ------------------------------------------------------------- queries
@@ -55,7 +58,7 @@ class ServiceFacade:
         return list(self.rt.mission_control.health_matrix())
 
     def config(self) -> dict:
-        return dict(self.rt.config.effective.raw)
+        return dict(self.rt.config_engine.effective.raw)
 
     # ------------------------------------------------------------ commands
     def execute_single_trade(self, payload: dict) -> dict:
@@ -126,10 +129,8 @@ class ServiceFacade:
         return {"breakeven_set": self.rt.tms.breakeven_all()}
 
     def submit_config_change(self, payload: dict) -> dict:
-        cfg = self.rt.config_engine.apply_change(payload["key"], payload["value"], actor=payload.get("actor", "operator"))
-        self.rt.ledger.append("config.change", {"key": payload["key"], "value": payload["value"],
-                                                "version": cfg.version})
-        return {"version": cfg.version, "key": payload["key"], "value": payload["value"]}
+        return self.rt.control_panel.change(payload["key"], payload["value"],
+                                            actor=payload.get("actor", "operator"))
 
     def initiate_rescan(self, payload: dict) -> dict:
         ev = self.rt.rescan.rescan(payload["symbol"].upper(), payload.get("reason", "manual"))

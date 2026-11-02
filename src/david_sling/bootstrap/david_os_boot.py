@@ -42,8 +42,8 @@ class DavidOSBoot:
             self.ledger_check(rt)
             self.audit.append(f"integrity: evidence ledger chain ok ({len(rt.ledger)} entries)")
             self.state = BootState.LICENSE_CHECK
-            self.license_check()
-            self.audit.append("license: simulated institutional entitlement active (sim mode)")
+            self.license_check(rt)
+            self.audit.append(f"license: {rt.license.license.detail}")
             self.state = BootState.READY
             await rt.start(feed=feed)
             self.audit.append("runtime: feed + TMS + telemetry + pipeline loops started")
@@ -68,7 +68,7 @@ class DavidOSBoot:
     def ledger_check(rt) -> None:
         rt.ledger.assert_continuity()
 
-    def license_check(self) -> None:
-        # Phase 1 sim mode: entitlement simulated as valid; live mode requires
-        # the cryptographic license engine (L1 security/license).
-        return None
+    @staticmethod
+    def license_check(rt) -> None:
+        # L1 security/license engine; raises SecurityError and halts boot on failure
+        rt.license.check()
