@@ -1,0 +1,8 @@
+# Development, static analysis, profiling, property-testing and doc tooling
+pytest>=8.0
+pytest-asyncio>=0.23
+pytest-qt>=4.4 ; extra == "gui"
+hypothesis>=6.100
+ruff>=0.5
+mypy>=1.10
+coverage>=7.5

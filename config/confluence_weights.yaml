@@ -1,0 +1,5 @@
+confluence_weights:
+  price_action: 0.40
+  candle_cdt: 0.35
+  indicators: 0.25
+  gate_threshold: 0.55

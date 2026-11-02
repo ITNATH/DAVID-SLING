@@ -1,0 +1,16 @@
+system:
+  name: "DAVID SLING"
+  brand: "DAVID SLING"
+  mode_default: sim
+  telemetry_hz: 2            # telemetry broadcast frequency
+  pipeline_tick_hz: 4        # TMS / position management loop
+  feed_hz: 10                # synthetic feed ticks per second per symbol
+  worker_bounds:
+    max_concurrent_signals: 8
+    max_concurrent_orders: 16
+  logging:
+    level: INFO
+  latency_budgets_ms:
+    fusion_us: 500           # fusion computation < 500 microseconds
+    rescan_ms: 5             # rescan lifecycle < 5 ms
+    gui_dispatch_ms: 1       # UI trade dispatch < 1 ms

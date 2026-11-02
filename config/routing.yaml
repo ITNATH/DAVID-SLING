@@ -1,0 +1,32 @@
+routing:
+  no_route_policy: ABSTAIN
+  min_route_score: 0.45
+  scenario_engine_matrix:
+    S1: [A, B]     # trend continuation
+    S2: [B, C]     # trend failure
+    S3: [B, C]     # pullback
+    S4: [A, B]     # momentum
+    S5: [A, B]     # breakout
+    S6: [B, C]     # breakout continuation
+    S7: [A, B]     # breakout failure
+    S8: [A, B]     # fakeout
+    S9: [A, B, C]  # liquidity sweep
+    S10: [B, C, D] # reversal
+    S11: [A, B]    # expansion
+    S12: [A, B]    # compression
+    S13: [B, C]    # consolidation
+    S14: [B, C]    # mean reversion
+    S15: [C, D]    # accumulation
+    S16: [C, D]    # distribution
+    S17: [C]       # markup
+    S18: [C]       # markdown
+    S19: [B, C]    # exhaustion
+    S20: [B, C]    # breakout-pullback-continuation
+    S21: [C, D]    # breakout-failure-reversal
+    S22: [C]       # quasimodo
+    S23: [C]       # diamond
+    S24: [A, B]    # parabolic expansion
+    S25: [A, B]    # turtle soup
+    S26: [A, B]    # taipan soup
+    S27: [B, C, D] # multi-timeframe alignment
+    S28: [D]       # news repricing

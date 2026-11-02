@@ -1,0 +1,5 @@
+symbols:
+  EURUSD: { digits: 5, tick_size: 0.00001, tick_value: 10.0, contract_size: 100000, min_lot: 0.01, lot_step: 0.01, max_lot: 20.0, spread_points: 2.0, margin_rate: 0.02, currency_profit: USD, currency_margin: USD }
+  GBPUSD: { digits: 5, tick_size: 0.00001, tick_value: 10.0, contract_size: 100000, min_lot: 0.01, lot_step: 0.01, max_lot: 20.0, spread_points: 2.4, margin_rate: 0.02, currency_profit: USD, currency_margin: USD }
+  USDJPY: { digits: 3, tick_size: 0.001, tick_value: 6.67, contract_size: 100000, min_lot: 0.01, lot_step: 0.01, max_lot: 20.0, spread_points: 2.2, margin_rate: 0.03, currency_profit: JPY, currency_margin: USD }
+  XAUUSD: { digits: 2, tick_size: 0.01, tick_value: 1.0, contract_size: 100, min_lot: 0.01, lot_step: 0.01, max_lot: 10.0, spread_points: 30.0, margin_rate: 0.05, currency_profit: USD, currency_margin: USD }

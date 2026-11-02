@@ -1,0 +1,4 @@
+environment:
+  name: dev
+  storage_dir: storage
+  ledger_path: storage/audit/evidence_ledger.jsonl

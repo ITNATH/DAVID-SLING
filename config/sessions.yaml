@@ -1,0 +1,4 @@
+sessions:
+  clock: UTC
+  six_phases: [ASIA, LONDON, NY, OVERLAPS, TEN_AM_CLUB, OFF_HOURS]
+  ten_am_club_utc: [14, 15]

@@ -1,0 +1,5 @@
+broker:
+  default: simulated
+  accounts:
+    simulated: { type: simulated, balance: 100000.0, currency: USD, leverage: 50 }
+  order_types: [MARKET, LIMIT, STOP]

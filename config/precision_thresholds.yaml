@@ -1,0 +1,6 @@
+precision_thresholds:
+  tier1: 0.85
+  tier2: 0.70
+  tier3: 0.55
+  tier4: 0.40
+  min_routed_score: 0.55

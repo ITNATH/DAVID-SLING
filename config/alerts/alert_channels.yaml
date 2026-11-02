@@ -1,0 +1,10 @@
+alerts:
+  channels:
+    websocket: { enabled: true }
+    mission_control: { enabled: true }
+    telegram: { enabled: false }
+    email: { enabled: false }
+    whatsapp: { enabled: false }
+    webhook: { enabled: false }
+  levels: [INFO, WARNING, CRITICAL, EMERGENCY]
+  throttle_per_minute: 30

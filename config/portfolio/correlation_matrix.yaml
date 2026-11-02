@@ -1,0 +1,8 @@
+portfolio:
+  correlation_matrix:
+    EURUSD: { EURUSD: 1.0, GBPUSD: 0.85, USDJPY: -0.70, XAUUSD: -0.30 }
+    GBPUSD: { EURUSD: 0.85, GBPUSD: 1.0, USDJPY: -0.60, XAUUSD: -0.25 }
+    USDJPY: { EURUSD: -0.70, GBPUSD: -0.60, USDJPY: 1.0, XAUUSD: 0.20 }
+    XAUUSD: { EURUSD: -0.30, GBPUSD: -0.25, USDJPY: 0.20, XAUUSD: 1.0 }
+  concentration_limits:
+    max_per_asset_class_pct: 40.0

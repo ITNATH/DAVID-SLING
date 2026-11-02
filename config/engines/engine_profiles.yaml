@@ -1,0 +1,29 @@
+engines:
+  A:
+    name: Quant Scalping
+    horizon: "15M-30M"
+    context_tfs: [H4, H1, M30]
+    trigger_tfs: [M5, M10, M15]
+    confirmation: [1CDT, 2CDT]
+    enabled: true
+  B:
+    name: Tactical Intraday
+    horizon: "1H-4H"
+    context_tfs: [H4, H1]
+    trigger_tfs: [M15, M30]
+    confirmation: [2CDT, 3CDT]
+    enabled: true
+  C:
+    name: Swing Structural
+    horizon: "4H-8H"
+    context_tfs: [D1, H4]
+    trigger_tfs: [H1, H4]
+    confirmation: [3CDT, 4CDT]
+    enabled: true
+  D:
+    name: Macro Institutional
+    horizon: "8H-Daily"
+    context_tfs: [W1, MN1, D1]
+    trigger_tfs: [H4, H8]
+    confirmation: [Multi-CDT]
+    enabled: true

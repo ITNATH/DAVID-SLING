@@ -1,0 +1,5 @@
+# Boot defaults - constitutional: max_hold_time is globally null (no time expiry)
+boot_state:
+  max_hold_time: null
+  single_instance: true
+  require_utc_clock: true

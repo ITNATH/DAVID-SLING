@@ -1,0 +1,18 @@
+# Secret stores, runtime state, binary logs, caches, build artifacts
+.env
+*.pem
+*.key
+storage/
+data/ticks/
+data/ohlcv/
+data/orderbook/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+.venv/
+coverage/

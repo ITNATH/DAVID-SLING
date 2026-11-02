@@ -1,0 +1,6 @@
+sizing:
+  lot_policy:
+    mode: risk_based                # risk_based | fixed | kelly_capped
+    kelly_fraction_cap: 0.25        # Kelly multiplier boundary
+    max_lot_cap: 20.0
+    enforce_broker_min_lot: true    # broker minimum lot is the authority

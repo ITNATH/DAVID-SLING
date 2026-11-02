@@ -1,0 +1,76 @@
+/* DAVID SLING IATOS - operator interface. Light/Dark via CSS variables + data-theme. */
+:root, html[data-theme="dark"] {
+  --bg: #0d1117; --bg2: #161b22; --card: #161b22; --border: #30363d;
+  --text: #e6edf3; --dim: #8b949e; --accent: #58a6ff; --buy: #2ea043; --sell: #f85149;
+  --warn: #d29922; --danger: #da3633; --ok: #3fb950; --pill: #21262d;
+}
+html[data-theme="light"] {
+  --bg: #f6f8fa; --bg2: #ffffff; --card: #ffffff; --border: #d0d7de;
+  --text: #1f2328; --dim: #59636e; --accent: #0969da; --buy: #1a7f37; --sell: #cf222e;
+  --warn: #9a6700; --danger: #cf222e; --ok: #1a7f37; --pill: #eaeef2;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif; font-size: 13px; }
+#topbar { display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 16px; background: var(--bg2); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10; }
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.logo { color: var(--accent); font-size: 18px; }
+.brand-name { font-family: "JetBrains Mono", monospace; font-weight: 800; letter-spacing: 2px; font-size: 18px; }
+.brand-sub { color: var(--dim); font-size: 11px; }
+.top-right { display: flex; gap: 8px; align-items: center; }
+.pill { padding: 3px 10px; border-radius: 999px; background: var(--pill); border: 1px solid var(--border); font-size: 11px; }
+.pill-ok { color: var(--ok); } .pill-bad { color: var(--sell); } .pill-dim { color: var(--dim); }
+.btn { background: var(--pill); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; }
+.btn:hover { border-color: var(--accent); }
+.btn-buy { background: var(--buy); color: #fff; border: none; font-weight: 700; }
+.btn-sell { background: var(--sell); color: #fff; border: none; font-weight: 700; }
+.btn-warn { background: var(--warn); color: #fff; border: none; }
+.btn-danger { background: var(--danger); color: #fff; border: none; font-weight: 800; animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: 0.6; } }
+#telemetry { display: flex; gap: 10px; padding: 10px 16px; flex-wrap: wrap; }
+.metric { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; min-width: 130px; }
+.metric .k { color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+.metric .v { font-family: "JetBrains Mono", monospace; font-size: 17px; font-weight: 700; }
+.pos { color: var(--ok); } .neg { color: var(--sell); }
+#grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; padding: 0 16px 16px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.card.wide { grid-column: 1 / -1; }
+.card h3 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); }
+.dim { color: var(--dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
+.health-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+.hcell { display: flex; align-items: center; gap: 6px; background: var(--pill); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 11px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+.dot.bad { background: var(--sell); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-family: "JetBrains Mono", monospace; font-size: 12px; }
+.kv .k { color: var(--dim); }
+.big-badge { font-family: "JetBrains Mono", monospace; font-size: 20px; font-weight: 800; margin: 6px 0; }
+.bars { display: flex; align-items: flex-end; gap: 4px; height: 90px; }
+.bar { flex: 1; border-radius: 3px 3px 0 0; background: var(--accent); min-height: 2px; position: relative; }
+.bar.neg { background: var(--sell); }
+.bar span { position: absolute; bottom: -16px; left: 0; right: 0; text-align: center; font-size: 9px; color: var(--dim); }
+.engine-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ecard { border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: var(--pill); }
+.ecard .nm { font-weight: 700; font-size: 12px; }
+.ecard .st { font-size: 11px; margin-top: 4px; }
+.feed { max-height: 220px; overflow-y: auto; font-family: "JetBrains Mono", monospace; font-size: 11px; }
+.feed div { padding: 3px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.tab { background: var(--pill); border: 1px solid var(--border); color: var(--dim); border-radius: 6px 6px 0 0; padding: 6px 14px; cursor: pointer; }
+.tab.active { color: var(--text); border-color: var(--accent); font-weight: 700; }
+.tabpane.hidden { display: none; }
+.form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-bottom: 10px; }
+.form-row label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--dim); }
+input, select { background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 8px; font-family: "JetBrains Mono", monospace; font-size: 12px; }
+table { width: 100%; border-collapse: collapse; font-family: "JetBrains Mono", monospace; font-size: 11px; margin-bottom: 10px; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+th { color: var(--dim); font-weight: 600; }
+.tier { padding: 1px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.tier1 { background: #3fb95033; color: var(--ok); } .tier2 { background: #58a6ff33; color: var(--accent); }
+.tier3 { background: #d2992233; color: var(--warn); } .tier4 { background: #f8514933; color: var(--sell); }
+.side-buy { color: var(--ok); } .side-sell { color: var(--sell); }
+#equity { width: 100%; background: var(--pill); border-radius: 8px; }
+footer { padding: 10px 16px; color: var(--dim); border-top: 1px solid var(--border); font-size: 11px; }

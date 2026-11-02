@@ -1,0 +1,6 @@
+fusion:
+  layers: [MN1, W1, D1, H8, H4, H1, M30, M15, M5]
+  top_down_weight: 0.6
+  ground_up_weight: 0.4
+  conflict_threshold: 0.6      # |score diff| across roles above this = conflict
+  convergence_threshold: 0.55

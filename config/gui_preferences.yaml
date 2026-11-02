@@ -1,0 +1,5 @@
+gui_preferences:
+  default_theme: institutional_dark
+  themes: [institutional_dark, institutional_light, bloomberg_terminal, cyber_matrix, high_contrast]
+  refresh_hz: [60, 120]
+  light_dark_toggle: true

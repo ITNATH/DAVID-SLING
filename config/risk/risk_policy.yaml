@@ -1,0 +1,16 @@
+risk:
+  risk_policy:
+    session_risk_cap_pct: 1.50      # hard session risk cap
+    risk_per_trade_pct: 1.00
+    daily_loss_limit_pct: 3.00
+    max_drawdown_pct: 8.00
+    max_open_positions: 8
+    max_positions_per_symbol: 3
+    min_margin_level_pct: 200.0
+    news_blackout: true
+  exposure_policy:
+    per_currency_exposure_limit_pct: 25.0   # of equity per base/quote currency
+    total_exposure_limit_pct: 60.0
+  circuit_breaker:
+    atr_spike_mult: 3.0             # ATR spike > 3x recent -> halt new entries
+    spread_widen_mult: 4.0

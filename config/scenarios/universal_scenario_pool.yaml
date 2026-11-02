@@ -1,0 +1,33 @@
+scenarios:
+  count: 31
+  terminal_states: [UNKNOWN, CONFLICTED, NOVEL]
+  terminal_policy: { UNKNOWN: WAIT, CONFLICTED: NO_ROUTE, NOVEL: ABSTAIN }
+  families:
+    S1: trend_continuation
+    S2: trend_failure
+    S3: pullback
+    S4: momentum
+    S5: breakout
+    S6: breakout_continuation
+    S7: breakout_failure
+    S8: fakeout
+    S9: liquidity_sweep
+    S10: reversal
+    S11: expansion
+    S12: compression
+    S13: consolidation
+    S14: mean_reversion
+    S15: accumulation
+    S16: distribution
+    S17: markup
+    S18: markdown
+    S19: exhaustion
+    S20: breakout_pullback_continuation
+    S21: breakout_failure_reversal
+    S22: quasimodo
+    S23: diamond
+    S24: parabolic_expansion
+    S25: turtle_soup
+    S26: taipan_soup
+    S27: multi_timeframe_alignment
+    S28: news_repricing

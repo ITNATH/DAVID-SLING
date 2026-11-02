@@ -1,0 +1,3 @@
+journal:
+  retention_days: 90
+  attribution: per_parameter_and_scenario

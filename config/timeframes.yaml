@@ -1,0 +1,7 @@
+timeframes:
+  canonical: [MN1, W1, D1, H8, H4, H1, M30, M15, M5, M1]
+  fusion_layers: [MN1, W1, D1, H8, H4, H1, M30, M15, M5]   # 9-layer brain; M1 is the trigger TF
+  roles:
+    HTF: [MN1, W1, D1, H8]
+    MTF: [H4, H1, M30]
+    LTF: [M15, M5, M1]
