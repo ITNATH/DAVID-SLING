@@ -189,3 +189,23 @@ then collapses (0.95 → WR 6–8%, 111–151 trades) = overfitting. Bottlenecks
 G34 (no forward probs), G32 (dead killzone), G35 (shared qualify), harness limits (no commissions/
 slippage regimes, hard heat cap, no correlation model). Target = max expectancy R s.t. MDD limits.
 Gates: pytest 48/48 · ruff clean · mypy 113 · arch audit PASS.
+
+---
+
+# Audit Round 6 — full-project scan: all bottlenecks/liapses limiting a 90%+ win rate (2026-11-03)
+
+Full register in `AUDIT_ROUND6_WINRATE_BOTTLENECKS.md`. New items: **G37 CRITICAL** —
+`HypothesisEngine.check_invalidation` never called (0 call sites, hypothesis/engine.py:46) →
+theses never invalidate; **G38** — vault swallows rule exceptions (vault.py:443-446, violates
+zero-silent-drop); **G39** — monitoring/learning proposals have no consumer (no adaptation loop);
+**G40** — `_dir()` defaults SHORT in neutral regimes (vault.py:54-55) → structural WR skew;
+**G41** — `max_positions_per_symbol` unpinned (default 3, risk/gate.py:45) → same-symbol pyramiding;
+**G42** — backtest harness runs slippage 0.0 vs live 0.5pt+spread → simulated WR overstated;
+**G43** — news_active is random 2%/tick, not a real calendar (runtime.py:367); **G44** — ledger
+fsync-per-append + per-bar `decision.context` append = IO ceiling at feed rate; **G45** — fusion
+>500µs raises FusionError and drops the whole bar's signal (fusion/brain.py:91); **G46** —
+per-bar `assert_no_silent_drops()` latency cost (runtime.py:507). Carried: G31 leak, G32 dead
+killzone, G34 no forward probs, G35 shared qualify, G33 no Gamma. Verdict: 90%+ WR is blocked by
+entry quality (G31/G34/G37/G40), not by filtering — empirical sweep pins WR ~35-37% across all
+gate levels. Fix priority: G31→G37→G34→G40→G41→G32→G35→G39→cost/latency items.
+Gates: pytest 48/48 · ruff clean · mypy 113 · arch audit PASS.
