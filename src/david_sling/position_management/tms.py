@@ -47,6 +47,7 @@ class TradeManagementLifecycle:
     def __init__(self, broker: SimulatedBrokerAdapter, specs: dict[str, SymbolSpec]) -> None:
         self.broker = broker
         self.specs = specs
+        self._risk_dist: dict[str, float] = {}  # G56: original |entry - SL| per position (R unit)
         self.closed_history: list[ClosedTrade] = []
         self.risk_amounts: dict[str, float] = {}   # position_id -> risk at entry
 
@@ -58,6 +59,8 @@ class TradeManagementLifecycle:
             if pos.symbol != symbol:
                 continue
             spec = self.specs[symbol]
+            # G56: capture original risk distance once, before breakeven/trailing move the SL
+            self._risk_dist.setdefault(pos_id, abs(pos.entry_price - (pos.stop_loss or pos.entry_price)))
             # spike defense
             if atr_avg > 0 and atr_now > SPIKE_DEFENSE_MULT * atr_avg:
                 self._close(pos_id, "spike_defense", result)
@@ -87,8 +90,8 @@ class TradeManagementLifecycle:
                     **{**p.model_dump(), "breakeven_done": True})
                 result.modified.append(pos_id)
                 pos = self.broker.account.positions[pos_id]
-            # trailing at +2.0R
-            sl_dist = abs(pos.entry_price - (pos.stop_loss or pos.entry_price))
+            # trailing at +2.0R (R measured from ORIGINAL risk distance - G56)
+            sl_dist = self._risk_dist.get(pos_id, abs(pos.entry_price - (pos.stop_loss or pos.entry_price)))
             if sl_dist > 0 and favorable >= TRAILING_R * sl_dist:
                 new_sl = price - atr_now if pos.side == OrderSide.BUY else price + atr_now
                 if pos.side == OrderSide.BUY and (pos.stop_loss is None or new_sl > pos.stop_loss) or pos.side == OrderSide.SELL and (pos.stop_loss is None or new_sl < pos.stop_loss):

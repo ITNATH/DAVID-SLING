@@ -249,3 +249,18 @@ HIGH; **G49** tape lacks vol clustering (MDD optimistic) — MEDIUM; **G50** no 
 broker sim — MEDIUM; G33 Gamma still absent. Verdict: bot PASS with conditions; next work =
 confidence calibration + walk-forward + slippage-in-gaps. Gates: pytest 57/57 · ruff clean ·
 mypy 115 · arch PASS.
+
+---
+
+# FIX STATUS — Round 8: execution-stack functional tests + failure-moment elimination (2026-11-03)
+
+`AUDIT_ROUND8_EXECUTION_STACK.md`. Functional matrix (14 tests PASS): broker execution, order
+management, tp/sl, breakeven, trailing, partial_close (no dust), portfolio exposure/concentration,
+spike defense, thesis failure — all ACTIVE. Consistent failure moments observed in the live ledger
+and FIXED: **G53** spread-widen false vetoes (constant spread_avg → rolling per-symbol mean),
+**G51/G52** exposure vetoes (notional-vs-equity → margin basis + missing per-currency check added),
+**G54** session risk cap inert (risk_amount=0 placeholder → real |entry−SL|×vol×contract estimate),
+**G55** no idempotency (broker _seen_keys + manager _by_key replay), **G56** trailing dead after
+breakeven (R now from original _risk_dist). Live re-measurement: vetoes now only the intended
+per-symbol cap; false-positive spread vetoes = 0. Gates: pytest 71/71 · ruff clean · mypy 115 ·
+arch PASS · live healthy.

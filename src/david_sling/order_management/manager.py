@@ -40,9 +40,15 @@ class OrderManager:
     def __init__(self, broker: SimulatedBrokerAdapter) -> None:
         self.broker = broker
         self.orders: dict[str, ManagedOrder] = {}
+        self._by_key: dict[str, str] = {}  # idempotency_key -> intent_id (G55)
 
     def submit(self, intent: OrderIntent, *, risk_approved: bool, risk_reasons: tuple[str, ...] = (),
                adjusted_volume: float | None = None) -> ManagedOrder:
+        # G55: idempotent replay - same key returns the existing order, never re-submits
+        existing_id = self._by_key.get(intent.idempotency_key)
+        if existing_id is not None and existing_id in self.orders:
+            return self.orders[existing_id]
+        self._by_key[intent.idempotency_key] = intent.intent_id
         if not risk_approved:
             order = ManagedOrder(intent=intent, status=OrderStatus.RISK_VETOED, risk_reasons=risk_reasons)
             self.orders[intent.intent_id] = order

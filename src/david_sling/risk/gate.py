@@ -68,7 +68,8 @@ class RiskGate:
 
     def evaluate(self, intent: OrderIntent, *, account: dict, open_positions: list[dict],
                  symbol_exposure: dict[str, float], atr_now: float, atr_avg: float,
-                 spread_now: float, spread_avg: float, news_active: bool = False) -> RiskDecision:
+                 spread_now: float, spread_avg: float, news_active: bool = False,
+                 entry_price: float | None = None, contract_size: float = 100_000.0) -> RiskDecision:
         reasons: list[str] = []
         if self.state.halted:
             return RiskDecision(approved=False,
@@ -105,17 +106,22 @@ class RiskGate:
             reasons.append(f"circuit breaker: ATR spike {atr_now:.5f} > {self.atr_spike_mult}x {atr_avg:.5f}")
         if spread_avg > 0 and spread_now > self.spread_widen_mult * spread_avg:
             reasons.append("circuit breaker: spread widen")
-        # exposure limits (per currency and total)
-        total_exposure = sum(abs(v) for v in symbol_exposure.values())
-        if equity > 0 and total_exposure / equity * 100 > self.total_exposure_pct:
-            reasons.append(f"total exposure {total_exposure/equity*100:.1f}% exceeds {self.total_exposure_pct}%")
-        # session risk cap: sum of open risk + new trade risk <= cap
+        # G51/G52: exposure limits on a MARGIN basis (notional / leverage), per currency and total
+        leverage = max(float(account.get("leverage", 50.0)), 1.0)
+        if equity > 0:
+            for cur, notional in symbol_exposure.items():
+                if abs(notional) / leverage / equity * 100 > self.per_currency_exposure_pct:
+                    reasons.append(f"per-currency {cur} margin exposure "
+                                   f"{abs(notional)/leverage/equity*100:.1f}% exceeds {self.per_currency_exposure_pct}%")
+            total_margin = sum(abs(v) for v in symbol_exposure.values()) / leverage
+            if total_margin / equity * 100 > self.total_exposure_pct:
+                reasons.append(f"total margin exposure {total_margin/equity*100:.1f}% exceeds {self.total_exposure_pct}%")
+        # G54: session risk cap with a REAL risk estimate for the new intent
         open_risk = sum(float(p.get("risk_amount", 0.0)) for p in open_positions)
         sl = intent.stop_loss
-        # estimate risk amount for the new intent if SL present (per unit volume)
         risk_amount = 0.0
-        if sl is not None:
-            risk_amount = 0.0  # computed by sizing with price distance; gate checks aggregate below
+        if sl is not None and entry_price is not None:
+            risk_amount = abs(entry_price - sl) * intent.volume * contract_size
         projected = open_risk + risk_amount
         if equity > 0 and projected / equity * 100 > self.session_risk_cap_pct + self.risk_per_trade_pct:
             reasons.append("session risk cap would be exceeded")

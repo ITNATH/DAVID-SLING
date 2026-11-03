@@ -71,7 +71,7 @@ class ServiceFacade:
             price=payload.get("price"), sl=payload.get("sl"), tp=payload.get("tp"),
             risk_pct=payload.get("risk_pct"), account=acct, positions=positions,
             atr_now_fn=self.rt.atr_now, atr_avg_fn=self.rt.atr_avg,
-            spread_now_fn=self.rt.spread_now, spread_avg_fn=lambda s: self.rt.symbols.get(s).spread_points,
+            spread_now_fn=self.rt.spread_now, spread_avg_fn=self.rt.spread_avg,
             news_active=self.rt.news_active,
         )
         return {"ok": res.ok, "orders": res.orders, "vetoed": res.vetoed, "message": res.message}

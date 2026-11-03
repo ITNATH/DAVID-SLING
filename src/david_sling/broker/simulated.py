@@ -40,6 +40,7 @@ class SimulatedBrokerAdapter(BrokerAdapter):
         self.specs = specs
         self.account = Account(balance=balance, currency=currency, leverage=leverage)
         self.slippage_points = slippage_points
+        self._seen_keys: set[str] = set()  # G55 idempotency ledger
         self.reports: list[ExecutionReport] = []
         self._prices: dict[str, float] = {}
         self._connected = True
@@ -115,6 +116,10 @@ class SimulatedBrokerAdapter(BrokerAdapter):
             raise ExecutionError(f"volume {intent.volume} above broker maximum lot {spec.max_lot}")
         if intent.order_type.value in ("LIMIT", "STOP") and intent.price is None:
             raise ExecutionError(f"{intent.order_type.value} order requires price")
+        # G55: idempotency - a retried intent must never open a second position
+        if intent.idempotency_key in self._seen_keys:
+            raise ExecutionError(f"duplicate idempotency_key {intent.idempotency_key} - already submitted")
+        self._seen_keys.add(intent.idempotency_key)
         fill, spread_pts = self._fill_price(symbol, intent.side)
         pos = PositionState(
             position_id=new_id("pos"), symbol=symbol, side=intent.side,

@@ -123,6 +123,7 @@ class Runtime:
         self._last_feed_ts: datetime | None = None
         self._last_day: str | None = None
         self._loop_exc_count = 0
+        self._spread_hist: dict[str, deque[float]] = {}
         self.boundary = ExecutionBoundary()
         self.risk = RiskGate(self.cfg.get("risk", {}))
         self.sizing = SizingEngine(self.cfg.get("sizing", {}))
@@ -184,9 +185,13 @@ class Runtime:
             return (tick.ask - tick.bid) / self.symbols.get(symbol).tick_size
         return self.symbols.get(symbol).spread_points
 
-    @property
-    def spread_avg(self) -> float:
-        return 2.5
+    def spread_avg(self, symbol: str) -> float:
+        """G53: real rolling mean of recent spread observations per symbol (never a
+        constant) - a static 2.5 made the spread-widen breaker veto every XAUUSD signal."""
+        hist = self._spread_hist.get(symbol)
+        if hist is None or len(hist) < 5:
+            return self.spread_now(symbol)  # warm-up: neutral, no false veto
+        return sum(hist) / len(hist)
 
     def account_snapshot(self) -> dict:
         rows = self.pnl_calculator.compute(self.broker.account.positions)
@@ -347,6 +352,8 @@ class Runtime:
                     if key in seen:
                         continue
                     seen.add(key)
+                    h = self._spread_hist.setdefault(symbol, deque(maxlen=50))
+                    h.append(self.spread_now(symbol))
                     if len(seen) > 4096:
                         seen.clear()
                     try:
@@ -571,8 +578,9 @@ class DecisionPipeline:
             exposure = rt.portfolio.net_exposure(positions, {s.name: s for s in rt.symbols.all()})
             decision = rt.risk.evaluate(intent, account=acct, open_positions=[p.model_dump() for p in positions],
                                         symbol_exposure=exposure, atr_now=fs.atr_m1, atr_avg=fs.atr_h1,
-                                        spread_now=rt.spread_now(symbol), spread_avg=rt.spread_avg,
-                                        news_active=rt.news_active)
+                                        spread_now=rt.spread_now(symbol), spread_avg=rt.spread_avg(symbol),
+                                        news_active=rt.news_active,
+                                        entry_price=fs.price, contract_size=spec.contract_size)
             if not decision.approved:
                 rt.signal_engine.set_status(ticket.signal_id, SignalStatus.VETOED)
                 await rt.bus.publish("risk.veto", {"signal": ticket.signal_id, "reasons": list(decision.reasons)})
