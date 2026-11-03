@@ -159,3 +159,19 @@ risk/indicator/sizing/news sections → config-governed via `/api/control-panel/
 ledgered) — full interactive forms are Milestone B (desktop) scope.
 
 Gates after round 3: **pytest 48/48 · ruff clean · mypy strict 113 files · architecture audit PASS**.
+
+---
+
+# Audit Round 4 — read-only architecture/strategy audit + simulated performance evaluation (2026-11-03)
+
+Full detail in `AUDIT_ROUND4_ARCHITECTURE_STRATEGY.md`. New lapses: **G31** forming-candle
+lookahead leak (`data/market.py:110-116` serves the unclosed bar to L3–L9; pipeline dedups on
+the live M1 bar) — CRITICAL; **G32** `TEN_AM_CLUB` unreachable in `session_epoch_manager.epoch_at`
+(branch shadowed) — MEDIUM; **G33** no Engine Gamma/HFT-MM exists — HIGH roadmap;
+**G34** no forward probability distributions 5m–8H (hypothesis/precision emit thesis+tiers
+only) — CRITICAL vs schema; **G35** peer engines are one supervisor's profiles, not isolated
+modules — MEDIUM; **G36** closed: added `scripts/performance_evaluation.py` +
+`PERFORMANCE_EVALUATION_REPORT.md` (simulated 2006–2026 regime-tagged evaluation of A/B/C/D +
+pro-forma Gamma; synthetic data, provenance stated). Verdicts: whole bot CONDITIONAL PASS
+(blocked by G31/G34), Engines A–D CONDITIONAL PASS, Gamma CRITICAL FAIL (absent).
+Gates: pytest 48/48 · ruff clean · mypy 113 · arch audit PASS.
