@@ -21,3 +21,4 @@ async def health_matrix(request: Request):
 @router.get("/pnl-matrix")
 async def pnl_matrix(request: Request):
     return {"matrix": get_runtime(request).facade.pnl_matrix()}
+

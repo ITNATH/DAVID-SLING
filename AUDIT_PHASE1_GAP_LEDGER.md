@@ -133,3 +133,29 @@ the loop auto-restarted instead of dying silently.
 | G23 | pipeline dedup key `(symbol, last.open_time)` | FIXED |
 | G9 | Milestone B (PySide6/qasync desktop) — scheduled next, not a lapse | PENDING (by design) |
 | G24/G25 | informational observations — no code required | INFO |
+
+---
+
+# Audit Round 3 — Mission Control Control Panel & L8 Engines vs. Architecture (2026-11-03)
+
+Scope: side-by-side of the web Mission Control center + `engines/supervisor.py` against the
+blueprint's `control_panel/` (HARDCORE OPERATOR CONTROL PANEL: panel_controller, input_schema,
+input_validator, authorization_check, command_handler, configuration_commit,
+hard_enforcement_router, audit_command, sections/*) and `engine_controls.py` /
+`engine_override_form.py` (peer engine enablement A/B/C/D).
+
+| Gap | Blueprint anchor | Finding | Status |
+|---|---|---|---|
+| G26 | `control_panel/sections/engine_controls.py` + `engine_override_form.py` "Peer engine enablement (A/B/C/D)" | Web Mission Control showed engine state cards only — **no enable/disable controls, no API** to mutate them | **FIXED**: new "🎛 Control Panel — Execution · Engine Controls" section with a toggle switch per engine A–D; `GET /api/control/engines` + `POST /api/control/engines/{id}` (StrictModel, token-guarded) |
+| G27 | `control_panel/audit_command.py` — every accepted/rejected control command recorded | Operator mutations were not ledgered | **FIXED**: every toggle appends `engine.toggled` to the SHA3-256 evidence ledger + versioned `config.change` via ControlPanel (rollback-able) |
+| G28 | `control_panel/hard_enforcement_router.py` + `configuration_commit.py` — effective controls pushed into governed modules, persisted across restarts | `engines.*.enabled` config existed but **never reached the L8 supervisor at runtime**, and toggles died on restart | **FIXED**: `Runtime.set_engine_enabled` hard-enforces into `EngineSupervisor` (disabled engine → qualify abstains → Router NO_ROUTE, tested), persists to `storage/runtime/control_panel_overrides.json`, re-applied at boot (`_apply_persisted_overrides`) |
+| G29 | zero-error / no `__import__` hacks (G21) | `_pipeline_loop` still used `__import__("david_sling.core.schemas"...)` | **FIXED** (top-level `AlertLevel`) |
+| G30 | `control_panel/authorization_check.py` | Control endpoints behind `require_token` (Bearer when `DAVID_SLING_API_TOKEN` set); dev-open sim otherwise, as designed for Phase 1 | PARITY (Phase-1 scope) |
+
+Control-panel section parity map (blueprint sections → web equivalent): emergency_controls →
+⛔ HALT / ▶ RESUME / 🚨 PANIC FLATTEN buttons (G13); alert_controls → `/api/alerts` + channels
+(G18); audit_export → `/api/evidence` + ledger verify; engine_controls → **this round (G26)**;
+risk/indicator/sizing/news sections → config-governed via `/api/control-panel/change` (versioned,
+ledgered) — full interactive forms are Milestone B (desktop) scope.
+
+Gates after round 3: **pytest 48/48 · ruff clean · mypy strict 113 files · architecture audit PASS**.

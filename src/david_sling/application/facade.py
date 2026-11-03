@@ -132,6 +132,14 @@ class ServiceFacade:
         return self.rt.control_panel.change(payload["key"], payload["value"],
                                             actor=payload.get("actor", "operator"))
 
+    def engines_status(self) -> dict:
+        return {"engines": self.rt.supervisor.health(),
+                "config_version": self.rt.cfg.version,
+                "mutations": [e.payload for e in self.rt.ledger.by_kind("engine.toggled")[-20:]]}
+
+    def set_engine(self, engine_id: str, enabled: bool, *, actor: str = "operator") -> dict:
+        return self.rt.set_engine_enabled(engine_id, enabled, actor=actor)
+
     def halt_trading(self, reason: str = "operator emergency halt") -> dict:
         self.rt.risk.halt(reason)
         self.rt.ledger.append("risk.halt", {"reason": reason})

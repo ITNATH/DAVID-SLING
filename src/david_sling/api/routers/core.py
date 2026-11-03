@@ -50,3 +50,21 @@ async def control_panel_change(payload: ConfigChange, request: Request):
     result = rt.facade.submit_config_change(payload.model_dump())
     await rt.telemetry.emit("config.changed", result)
     return result
+
+class EngineToggle(StrictModel):
+    enabled: bool
+    actor: str = "operator"
+
+
+@router.get("/control/engines")
+async def engine_controls(request: Request):
+    """Control Panel - Execution section: current state of peer engines A/B/C/D."""
+    return get_runtime(request).facade.engines_status()
+
+
+@router.post("/control/engines/{engine_id}")
+async def engine_toggle(engine_id: str, payload: EngineToggle, request: Request):
+    """Authorized mutation: enable/disable a peer engine; versioned, ledgered,
+    persisted and hard-enforced into the L8 supervisor (routing abstains)."""
+    return get_runtime(request).facade.set_engine(engine_id, payload.enabled, actor=payload.actor)
+

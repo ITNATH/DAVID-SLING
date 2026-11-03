@@ -141,6 +141,31 @@ function renderEngines(en) {
      <div class="st">${e.horizon} · ctx ${e.context_tfs.join("/")} · trig ${e.trigger_tfs.join("/")}</div>
      <div class="st" style="color:${e.state === "TRIGGERED" ? "var(--ok)" : e.enabled ? "var(--accent)" : "var(--sell)"}">${e.state}${e.enabled ? "" : " (disabled)"}</div></div>`).join("");
 }
+function renderEngineControls(en, version) {
+  const host = $("engine-controls");
+  if (!host) return;
+  host.innerHTML = Object.entries(en).map(([id, e]) => `
+    <div class="eng-row ${e.enabled ? "on" : "off"}">
+      <div class="eng-id">${id}</div>
+      <div class="eng-meta"><b>${e.name}</b> · ${e.horizon}<br>
+        <span class="dim">ctx ${e.context_tfs.join("/")} · trig ${e.trigger_tfs.join("/")} · state ${e.state}</span></div>
+      <label class="switch" title="Enable / disable Engine ${id}">
+        <input type="checkbox" data-engine="${id}" ${e.enabled ? "checked" : ""}>
+        <span class="slider"></span>
+      </label>
+    </div>`).join("");
+  if (version) $("control-result").textContent = `config v${version} · mutations recorded in evidence ledger`;
+  host.querySelectorAll("input[data-engine]").forEach(inp =>
+    inp.addEventListener("change", () => toggleEngine(inp.dataset.engine, inp.checked)));
+}
+async function toggleEngine(id, enabled) {
+  const r = await api(`/api/control/engines/${id}`, { enabled, actor: "operator" });
+  $("control-result").textContent = `engine ${id} ${enabled ? "ENABLED" : "DISABLED"} · config v${r.config_version} · ledgered`;
+  if (r.engine) loadEngineControls();
+}
+async function loadEngineControls() {
+  try { const d = await api("/api/control/engines"); renderEngineControls(d.engines, d.config_version); } catch (e) {}
+}
 function renderSignals(sigs) {
   $("signals").innerHTML = sigs.slice(-12).reverse().map(s =>
     `<div><span class="tier tier${s.precision.tier}">T${s.precision.tier}</span>
@@ -203,6 +228,7 @@ function connect() {
       renderScenario(msg.scenarios, state.selected);
       renderFusion(msg.fusion, state.selected);
       renderEngines(msg.engines);
+      renderEngineControls(msg.engines);
       renderSignals(msg.signals);
       renderPositions(msg.positions, msg.pnl_matrix);
       renderAlerts(msg.alerts);
@@ -218,4 +244,5 @@ function connect() {
 }
 fillSymbols();
 api("/api/health").then(h => { if (h.status === "ok") $("conn").textContent = "boot OK"; });
+loadEngineControls();
 connect();

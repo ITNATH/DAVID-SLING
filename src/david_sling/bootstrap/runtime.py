@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import pathlib
 import random
 from collections import deque
 from contextlib import suppress
@@ -21,6 +22,7 @@ from david_sling.alerts.engine import AlertEngine
 from david_sling.awareness.engine import AwarenessEngine
 from david_sling.configuration.configuration_engine import ConfigurationEngine
 from david_sling.control_panel.panel import ControlPanel
+from david_sling.core.errors import ExecutionError
 from david_sling.core.schemas import AlertLevel, SignalStatus, Timeframe
 from david_sling.core.utils import utc_now
 from david_sling.data.market import MarketSimulator
@@ -110,6 +112,7 @@ class Runtime:
         self.validation = ValidationEngine(threshold=float(self.cfg.get("confluence_weights.gate_threshold", 0.55)))
         self.vault = STRATEGY_VAULT
         self.supervisor = EngineSupervisor(self.cfg.get("engines", {}))
+        self._apply_persisted_overrides()
         matrix = {k: v for k, v in (self.cfg.get("routing.scenario_engine_matrix", {}) or {}).items()}
         self.router = Router(self.supervisor, matrix, min_score=float(self.cfg.get("routing.min_route_score", 0.45)))
         self.precision = PrecisionEngine(self.cfg.get("precision_thresholds", {}),
@@ -349,8 +352,7 @@ class Runtime:
                     try:
                         await self.pipeline.run_symbol(symbol)
                     except Exception as exc:
-                        await self.alerts.emit(__import__("david_sling.core.schemas", fromlist=["AlertLevel"]).AlertLevel.WARNING,
-                                               f"pipeline error {symbol}: {exc}")
+                        await self.alerts.emit(AlertLevel.WARNING, f"pipeline error {symbol}: {exc}")
             await asyncio.sleep(0.2)
 
     async def _news_loop(self) -> None:
@@ -370,6 +372,65 @@ class Runtime:
                                        "HIGH-IMPACT NEWS BLACKOUT ACTIVE (30 sim-min)")
 
     # ------------------------------------------------------------- status
+    # -------------------------------------------------- control panel (engines)
+    OVERRIDE_PATH = "storage/runtime/control_panel_overrides.json"
+
+    def _apply_persisted_overrides(self) -> None:
+        """Re-apply operator control-panel mutations saved before a restart
+        (blueprint: configuration_commit + hard_enforcement_router)."""
+        import json as _json
+
+        path = pathlib.Path(self.OVERRIDE_PATH)
+        if not path.exists():
+            return
+        try:
+            overrides = _json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return
+        for key, value in overrides.items():
+            try:
+                self.cfg = self.config_engine.apply_change(key, value, actor="boot-replay")
+            except Exception:
+                continue
+            if key.startswith("engines.") and key.endswith(".enabled"):
+                eid = key.split(".")[1].upper()
+                if eid in self.supervisor.profiles:
+                    self.supervisor.set_enabled(eid, bool(value))
+                    self.supervisor.states[eid] = "ARMED" if value else "DISABLED"
+
+    def set_engine_enabled(self, engine_id: str, enabled: bool, *, actor: str = "operator") -> dict:
+        """Control-panel mutation: enable/disable a peer engine (A/B/C/D).
+        Versioned config change + ledgered + telemetry-emitted + persisted, and
+        hard-enforced into the L8 supervisor so routing immediately abstains."""
+        import json as _json
+
+        eid = engine_id.upper()
+        if eid not in self.supervisor.profiles:
+            raise ExecutionError(f"unknown engine '{engine_id}' - expected one of {sorted(self.supervisor.profiles)}")
+        self.supervisor.set_enabled(eid, bool(enabled))
+        self.supervisor.states[eid] = "ARMED" if enabled else "DISABLED"
+        result = self.control_panel.change(f"engines.{eid}.enabled", bool(enabled), actor=actor)
+        self.cfg = self.config_engine.effective
+        record = {"engine": eid, "enabled": bool(enabled), "actor": actor,
+                  "config_version": result["version"], "ts": utc_now().isoformat()}
+        self.ledger.append("engine.toggled", record)
+        path = pathlib.Path(self.OVERRIDE_PATH)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        overrides: dict = {}
+        if path.exists():
+            try:
+                overrides = _json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                overrides = {}
+        overrides[f"engines.{eid}.enabled"] = bool(enabled)
+        path.write_text(_json.dumps(overrides, indent=2), encoding="utf-8")
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(self.telemetry.emit("engine.toggled", record))
+        except RuntimeError:
+            pass
+        return record
+
     def status_summary(self) -> str:
         return (f"mode={self.mode} symbols={self.symbols.symbols()} "
                 f"ledger_entries={len(self.ledger)} chain_ok={self.ledger.verify_chain()} "
