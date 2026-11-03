@@ -175,3 +175,17 @@ modules — MEDIUM; **G36** closed: added `scripts/performance_evaluation.py` +
 pro-forma Gamma; synthetic data, provenance stated). Verdicts: whole bot CONDITIONAL PASS
 (blocked by G31/G34), Engines A–D CONDITIONAL PASS, Gamma CRITICAL FAIL (absent).
 Gates: pytest 48/48 · ruff clean · mypy 113 · arch audit PASS.
+
+---
+
+# Audit Round 5 — engine soundness + 94% WR feasibility (1998–2026) — 2026-11-03
+
+`PERFORMANCE_EVALUATION_REPORT.md` regenerated on a 28y horizon with LTCM-1998, SEP11-2001,
+DOTCOM-BUST, GFC, EURO, COVID, INFL, TRUMP-1, DEEPSEEK, TRUMP-2, CRYPTO slices. Engine verdicts:
+A CONDITIONAL FAIL in secular bear (PF 0.97, MDD 46%), B/C PASS-conditional, D PASS (best
+risk-adjusted: +81.4%, MDD 27%, ExpR 0.061), Gamma CRITICAL FAIL (absent, G33; pro-forma PF 0.0).
+94% WR goal: **not achievable by filtering** — min_convergence sweep 0.45→0.95 keeps WR ~36%
+then collapses (0.95 → WR 6–8%, 111–151 trades) = overfitting. Bottlenecks: G31 (lookahead),
+G34 (no forward probs), G32 (dead killzone), G35 (shared qualify), harness limits (no commissions/
+slippage regimes, hard heat cap, no correlation model). Target = max expectancy R s.t. MDD limits.
+Gates: pytest 48/48 · ruff clean · mypy 113 · arch audit PASS.

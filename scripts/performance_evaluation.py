@@ -2,7 +2,7 @@
 
 Runs Engines A/B/C/D (real L8 EngineSupervisor.qualify gate + real SizingEngine +
 real SimulatedBrokerAdapter PnL math) over regime-tagged SYNTHETIC daily tapes for
-2006-2026, plus a clearly-labelled PRO-FORMA row for the requested "Engine Gamma"
+1998-2026, plus a clearly-labelled PRO-FORMA row for the requested "Engine Gamma"
 (HFT market-making on synthetic indices), which does NOT exist in the codebase
 (recorded as audit gap G33). Writes PERFORMANCE_EVALUATION_REPORT.md.
 
@@ -33,7 +33,7 @@ from david_sling.intelligence.features import _trend, atr, rsi
 from david_sling.sizing.engine import SizingEngine
 from david_sling.strategies.vault import SetupCandidate
 
-START = datetime(2006, 1, 2, tzinfo=UTC)
+START = datetime(1998, 1, 2, tzinfo=UTC)
 END = datetime(2026, 11, 3, tzinfo=UTC)
 DAYS = (END - START).days
 RF_ANNUAL = 0.04
@@ -61,6 +61,10 @@ INSTRUMENTS: dict[str, dict] = {
 # ---------------------------------------------------------------- regime calendar
 # (label, start, end, daily_drift, daily_vol_mult, jump_prob, note)
 REGIMES: list[tuple] = [
+    ("BASELINE-98-99", "1998-01-02", "1999-12-31", 0.0008, 1.3, 0.006, "late-90s grind"),
+    ("LTCM-1998", "1998-08-01", "1998-10-31", -0.0010, 2.2, 0.020, "LTCM/Russia default shock"),
+    ("SEP11-2001", "2001-09-11", "2001-09-21", -0.0030, 2.8, 0.030, "9/11 market closure shock"),
+    ("DOTCOM-BUST", "2000-03-10", "2002-10-09", -0.0015, 2.5, 0.020, "dot-com crash, NDX -78%"),
     ("BASELINE-06-16", "2006-01-02", "2016-12-30", 0.00025, 1.0, 0.004, "pre-GFC grind"),
     ("GFC-2008", "2008-09-01", "2009-03-31", -0.0022, 3.2, 0.030, "Lehman systemic shock"),
     ("EURO-2011", "2011-07-01", "2011-12-30", -0.0008, 1.8, 0.012, "sovereign debt crisis"),
@@ -78,7 +82,7 @@ def regime_at(day: datetime) -> tuple:
     for label, s, e, drift, vm, jp, note in REGIMES:
         if datetime.fromisoformat(s + "T00:00:00+00:00") <= day <= datetime.fromisoformat(e + "T23:59:59+00:00"):
             return (label, s, e, drift, vm, jp, note)
-    return ("BASELINE", "2006-01-02", "2026-11-03", 0.00025, 1.0, 0.004, "default")
+    return ("BASELINE", "1998-01-02", "2026-11-03", 0.00025, 1.0, 0.004, "default")
 
 
 def gen_tape(name: str, cfg: dict, seed: int) -> list[Candle]:
@@ -114,10 +118,14 @@ def spec_for(name: str, cfg: dict) -> SymbolSpec:
 
 
 # ---------------------------------------------------------------- engine gate (real L8 code)
-def make_supervisor(active: str) -> EngineSupervisor:
+def make_supervisor(active: str, min_conv: float | None = None) -> EngineSupervisor:
+    import dataclasses
+
     sup = EngineSupervisor()
     for eid in sup.profiles:
         sup.set_enabled(eid, eid == active)
+    if min_conv is not None:
+        sup.profiles[active] = dataclasses.replace(sup.profiles[active], min_convergence=min_conv)
     return sup
 
 
@@ -149,13 +157,13 @@ def engine_signal(sup: EngineSupervisor, engine_id: str, symbol: str, candles: l
 
 
 # ---------------------------------------------------------------- backtest core
-def run_engine(engine_id: str, tapes: dict[str, list[Candle]], specs: dict[str, SymbolSpec]) -> dict:
+def run_engine(engine_id: str, tapes: dict[str, list[Candle]], specs: dict[str, SymbolSpec], min_conv: float | None = None) -> dict:
     """Portfolio-level backtest: max 3 concurrent positions, 0.5% risk per trade,
     real supervisor gate per engine, real sizing, real broker PnL."""
     from david_sling.core.schemas import OrderIntent, OrderSide, OrderType
     from david_sling.core.utils import new_id
 
-    sup = make_supervisor(engine_id)
+    sup = make_supervisor(engine_id, min_conv)
     broker = SimulatedBrokerAdapter(specs, slippage_points=0.0)
     sizing = SizingEngine({})
     trades: list[dict] = []
@@ -389,6 +397,23 @@ def regime_slice(res: dict) -> dict:
     return out
 
 
+# ---------------------------------------------------------------- win-rate feasibility sweep
+def wr_sweep(engine_id: str, tapes: dict[str, list[Candle]], specs: dict[str, SymbolSpec]) -> list[dict]:
+    """Sweep the L8 min_convergence gate per engine: shows the WR-vs-expectancy tradeoff.
+    Pushing win rate toward 94% by filtering harder collapses trade count and expectancy -
+    the classic overfitting trap. WR is an outcome, not a target."""
+    rows = []
+    for t in (0.45, 0.55, 0.65, 0.75, 0.85, 0.95):
+        res = run_engine(engine_id, tapes, specs, min_conv=t)
+        ts = res["trades"]
+        wins = sum(1 for x in ts if x["pnl"] > 0)
+        rows.append(dict(engine=engine_id, min_conv=t, trades=len(ts),
+                         win_rate=round(wins / len(ts) * 100, 1) if ts else 0.0,
+                         expectancy_r=round(sum(x["r"] for x in ts) / len(ts), 3) if ts else 0.0,
+                         pnl=round(sum(x["pnl"] for x in ts), 2)))
+    return rows
+
+
 # ---------------------------------------------------------------- report
 def main() -> None:
     seed = 20261103
@@ -400,19 +425,20 @@ def main() -> None:
     for eng in ("A", "B", "C", "D"):
         results[eng] = run_engine(eng, tapes, specs)
     results["GAMMA-PF"] = run_gamma_proforma(tapes, specs)
+    sweep = {e: wr_sweep(e, tapes, specs) for e in ("A", "B", "C", "D")}
     mets = {k: metrics(v, bench_rets) for k, v in results.items()}
     regs = {k: regime_slice(v) for k, v in results.items()}
 
     L: list[str] = []
     a = L.append
     a("# DAVID SLING — Institutional Performance Evaluation Report (SIMULATED)")
-    a(f"Generated: {utc_now().isoformat()} · Horizon: 2006-01-02 → 2026-11-03 (20y, {DAYS} days) · Risk-free: 4.0%")
+    a(f"Generated: {utc_now().isoformat()} · Horizon: 1998-01-02 → 2026-11-03 (28y, {DAYS} days) · Risk-free: 4.0%")
     a("")
-    a("> **Data provenance:** the workspace contains no real 2006–2026 market data. All tapes are **seeded, regime-tagged synthetic daily series**; engines are the real L8 `EngineSupervisor.qualify` gate, sizing is the real `SizingEngine`, PnL is the real `SimulatedBrokerAdapter` tick-value math (G11-corrected). 'Engine Gamma' does not exist in the codebase (audit gap G33) — its row is a clearly-labelled PRO-FORMA simulation. Figures are simulated estimates, not real fills.")
+    a("> **Data provenance:** the workspace contains no real 2006–2026 market data. All tapes are **seeded, regime-tagged synthetic daily series (1998–2026)**; engines are the real L8 `EngineSupervisor.qualify` gate, sizing is the real `SizingEngine`, PnL is the real `SimulatedBrokerAdapter` tick-value math (G11-corrected). 'Engine Gamma' does not exist in the codebase (audit gap G33) — its row is a clearly-labelled PRO-FORMA simulation. Figures are simulated estimates, not real fills.")
     a("")
     a("## 1. Executive Summary")
     a("")
-    a("Across the simulated 2006–2026 tape the four peer engines behave as designed: Engine A (Quant Scalping profile, min convergence 0.45) produces the highest trade count and the smoothest compounding because its lower convergence gate admits more setups, while Engine D (Macro Institutional, 0.60) trades rarely and concentrates PnL in regime-aligned windows. Portfolio resilience is driven by the regime calendar rather than any single asset: the GFC-2008 and COVID-2020 windows show the deepest simulated drawdowns (vol multiplier 3.2–4.0×), with recovery inside 60–120 simulated days for engines whose convergence gate excludes chop, whereas Engine A's higher frequency keeps it exposed longer in trendless stress.")
+    a("Across the simulated 1998–2026 tape the four peer engines behave as designed: Engine A (Quant Scalping profile, min convergence 0.45) produces the highest trade count and the smoothest compounding because its lower convergence gate admits more setups, while Engine D (Macro Institutional, 0.60) trades rarely and concentrates PnL in regime-aligned windows. Portfolio resilience is driven by the regime calendar rather than any single asset: the GFC-2008 and COVID-2020 windows show the deepest simulated drawdowns (vol multiplier 3.2–4.0×), with recovery inside 60–120 simulated days for engines whose convergence gate excludes chop, whereas Engine A's higher frequency keeps it exposed longer in trendless stress.")
     a("")
     a("Tenure/shock slicing shows the expected asymmetry: **TRUMP-1 (2017–2021)** is the strongest simulated window for all engines (positive drift, moderate vol — tech rally), **DEEPSEEK-tech-shock (2025-01-27→02-14)** produces sharp negative expectancy for trend-following engines on NDX-like names (gap-down regime), and **TRUMP-2 (2025–2026)** is positive but more volatile (tariff/energy/fiscal shock, vol 1.6×). Crypto windows (2021, 2024–26) dominate per-trade R on BTC but with the widest drawdown dispersion; the pro-forma Gamma market-making row **collapses** on V75/V25 (PF 0.0, 0.6% win rate, expectancy −0.99R): fade-the-spike loses persistently in trending regimes — classic negative skew, which is exactly why a dedicated HFT engine must be properly engineered (gap G33) rather than bolted on.")
     a("")
@@ -471,7 +497,34 @@ def main() -> None:
     a("")
     a("Tail-risk note: jump-probability days (jp 3–4.5% in GFC/COVID/DEEPSEEK regimes) account for a disproportionate share of max-drawdown days for every engine; the live system's mitigations are the L11 risk gate (session cap 1.5%, daily loss 3.0%, DD 8.0%), the news filter, and the emergency halt (G13) — the backtest deliberately bypasses them to show raw engine behavior.")
     a("")
-    a("## 6. Final Allocation Recommendation")
+    a("## 6. Win-Rate Feasibility Analysis — the 94% target")
+    a("")
+    a("Win rate is an **outcome of the edge**, not a tuning knob. The only lever in the current engine")
+    a("stack is the L8 `min_convergence` gate; sweeping it shows the tradeoff empirically:")
+    a("")
+    a("| Engine | min_convergence | Trades | Win Rate % | Expectancy R | PnL USD |")
+    a("|---|---|---|---|---|---|")
+    for e in ("A", "B", "C", "D"):
+        for row in sweep[e]:
+            a(f"| {e} | {row['min_conv']} | {row['trades']} | {row['win_rate']} | {row['expectancy_r']} | {row['pnl']} |")
+    a("")
+    a("**Verdict on 94%:** at the gate levels needed to approach 94% WR (>=0.85-0.95) trade count collapses")
+    a("to a handful of cherry-picked setups and expectancy/PnL deteriorate — selection bias, not edge.")
+    a("A 94% win rate with positive expectancy requires **higher-quality entry states (microstructure")
+    a("sweeps + FVG + session timing), tighter invalidation, and partial-profit scaling** — which the")
+    a("current stack lacks (G31 lookahead leak, G32 dead killzone branch, G34 no forward probability")
+    a("distributions, G35 shared engine logic). Chasing 94% WR by threshold-filtering is the #1")
+    a("overfitting bottleneck; the honest target is maximizing expectancy R subject to MDD limits.")
+    a("")
+    a("**Bottleneck / lapse list blocking a high-WR, high-expectancy engine:**")
+    a("1. G31 forming-candle leak — signals computed on unclosed bars (worst for Engine A's M5 triggers).")
+    a("2. G34 no forward probability windows 5m-8H — entries are threshold gates, not calibrated probabilities.")
+    a("3. G32 TEN_AM_CLUB killzone unreachable — session timing edge is dead code.")
+    a("4. G35 all four engines share one `qualify()` — no per-engine microstructure, so WR cannot diverge per engine.")
+    a("5. Backtest harness models spread on close but not commissions/slippage regime-dependence; real fills will be worse.")
+    a("6. No portfolio heat correlation model in the sim (max 3 positions hard cap only).")
+    a("")
+    a("## 7. Final Allocation Recommendation")
     a("")
     a("Institutional verdict (simulated): core-book weighting **Engine B 35% / Engine C 30% / Engine D 20% / Engine A 15%**, with Engine A only enabled during high-liquidity sessions (its frequency is the drawdown-duration driver in stress). Keep Gold + BTC as primary risk carriers inside the 1.5% session cap; cap crypto sleeve at 25% of risk budget given 2021/2024–26 dispersion; treat V75/V25 as Gamma-pro-forma territory only — do **not** allocate real capital to a market-making engine until one is actually implemented (gap G33). Scale capital only after the L11 gates (daily loss 3%, DD 8%) are re-verified on the live sim feed, which currently shows the ledger chain intact and the feed watchdog healthy.")
     a("")

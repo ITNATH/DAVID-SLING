@@ -96,3 +96,38 @@ market data exists in the workspace — stated in the report header).
 
 Gates after round 4 (read-only audit + additive report script): pytest 48/48 · ruff clean ·
 mypy strict 113 files · architecture audit PASS.
+
+---
+
+# Round 5 — Engine Soundness Review & 94% Win-Rate Feasibility (2026-11-03, 1998–2026 horizon)
+
+Extended `scripts/performance_evaluation.py` to a **1998–2026** horizon (28y) with the full
+shock calendar: LTCM-1998, SEP11-2001, DOTCOM-BUST (2000–2002), BASELINE-98-99/06-16, GFC-2008,
+EURO-2011, COVID-2020, INFL-2022, CRYPTO-2021, TRUMP-1 (2017-01-20→2021-01-20),
+DEEPSEEK-TECH-SHOCK (2025-01-27→02-14), TRUMP-2 (2025-01-20→2026-11-03), CRYPTO-2024-26.
+Per-regime per-engine slices (trades / win% / expectancy R / PnL) are in
+`PERFORMANCE_EVALUATION_REPORT.md` §4.
+
+## Engine soundness verdicts (simulated 28y, real L8 gate + sizing + broker PnL)
+| Engine | 28y result | Soundness verdict |
+|---|---|---|
+| A — Quant Scalping | −29.8% total, PF 0.97, MDD 46.3%, avg DD 546d | **CONDITIONAL FAIL in secular bear regimes** — highest frequency = most exposure to G31 leak + LTCM/DOTCOM chop; disable or gate by regime |
+| B — Tactical Intraday | +27.1%, PF 1.02, MDD 25.6%, Sharpe 1.65 | **PASS (conditional on G31/G32 fixes)** |
+| C — Swing Structural | +58.7%, PF 1.05, MDD 30.2%, Sharpe 1.58 | **PASS (conditional)** |
+| D — Macro Institutional | **+81.4%, CAGR 2.09%, PF 1.09, MDD 27.0%, avg DD 102d, Sharpe 1.36, ExpR 0.061** | **PASS — strongest risk-adjusted engine on the 28y tape** |
+| Gamma (HFT MM) | **absent from code (G33)**; pro-forma −211.7%, PF 0.0, WR 0.5% | **CRITICAL FAIL — do not allocate; naive fade-MM is negative-skew** |
+
+## 94% win-rate goal — feasibility (empirical sweep in report §6)
+Sweeping the only available lever (L8 `min_convergence` 0.45→0.95) shows WR stays ~34–37%
+until the gate starves trades, then **collapses** (at 0.95: 111–151 trades, WR 6–8%) — filtering
+cannot manufacture a 94% WR; it manufactures overfitting. 94% WR with positive expectancy
+requires entry-state quality the stack does not yet have. **Bottleneck list:**
+1. **G31** forming-candle lookahead leak (worst for Engine A's M5/M10/M15 triggers) — CRITICAL
+2. **G34** no calibrated forward probability distributions (5m–8H) — entries are threshold gates — CRITICAL
+3. **G32** TEN_AM_CLUB killzone unreachable (dead branch) — session-timing edge missing — MEDIUM
+4. **G35** all four engines share one `qualify()` — no per-engine microstructure to differentiate WR — MEDIUM
+5. Harness limits: spread on close only (no commission/slippage regimes), hard 3-position heat cap, no correlation model — real fills will be worse than simulated
+
+Honest institutional target: **maximize expectancy R subject to MDD ≤ 8–12% and the L11 gates**,
+not a fixed WR. On the simulated tape that means D-weighted allocation with A disabled in
+secular-bear regimes.
