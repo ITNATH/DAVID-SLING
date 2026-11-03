@@ -51,8 +51,13 @@ def _mk(s: BaseStrategy, fs: FeatureSet, direction: Direction, sl_atr: float = 1
                           take_profit=round(tp, 6), risk_reward=rr, confidence=conf)
 
 
-def _dir(fs: FeatureSet) -> Direction:
-    return "long" if (fs.displacement_up or fs.trend_alignment() > 0) else "short"
+def _dir(fs: FeatureSet) -> Direction | None:
+    """Neutral regimes must abstain - never force a side (G40: no structural short bias)."""
+    if fs.displacement_up or fs.trend_alignment() > 0:
+        return "long"
+    if fs.displacement_dn or fs.trend_alignment() < 0:
+        return "short"
+    return None
 
 
 # ---------------------------------------------------------------- Family 1
@@ -438,6 +443,8 @@ class StrategyRegistry:
 
     def evaluate(self, fs: FeatureSet) -> list[SetupCandidate]:
         direction = _dir(fs)
+        if direction is None:
+            return []  # neutral regime -> abstain, zero candidates
         out: list[SetupCandidate] = []
         for s in self._strategies.values():
             try:

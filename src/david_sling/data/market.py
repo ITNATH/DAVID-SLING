@@ -107,11 +107,14 @@ class CandleBuilder:
             cur.volume += 1.0
         return closed
 
-    def candles(self, symbol: str, tf: Timeframe, limit: int = 500) -> list[Candle]:
+    def candles(self, symbol: str, tf: Timeframe, limit: int = 500, *,
+                include_forming: bool = True) -> list[Candle]:
+        """include_forming=False gives the CLOSED-only series (G31: hard bar-close
+        isolation for all signal/matrix consumers; UI/price may keep the live bar)."""
         key = (symbol, tf)
         forming = self._forming.get(key)
         out = list(self.closed.get(key, []))
-        if forming is not None:
+        if forming is not None and include_forming:
             out.append(forming)
         return out[-limit:]
 
@@ -259,8 +262,9 @@ class MarketSimulator:
     def tick_of(self, symbol: str) -> Tick | None:
         return self.states[symbol].last_tick
 
-    def candles(self, symbol: str, tf: Timeframe, limit: int = 500) -> list[Candle]:
-        return self.builder.candles(symbol, tf, limit)
+    def candles(self, symbol: str, tf: Timeframe, limit: int = 500, *,
+                include_forming: bool = True) -> list[Candle]:
+        return self.builder.candles(symbol, tf, limit, include_forming=include_forming)
 
     def generate_history(self, symbol: str, days: int) -> list[Tick]:
         """Deterministic historical tick tape for backtest/replay."""

@@ -71,6 +71,16 @@ class MonitoringEngine:
         if ms > 1.0:
             self.dispatch_over_budget += 1
 
+    def active_drift_strategies(self) -> set[str]:
+        """G39: strategy ids with an unconsumed concept-drift proposal."""
+        return {p["strategy"] for p in self.proposals
+                if p["type"] == "concept_drift" and not p.get("consumed")}
+
+    def mark_drift_consumed(self) -> None:
+        for p in self.proposals:
+            if p["type"] == "concept_drift":
+                p["consumed"] = True
+
     def summary(self) -> dict:
         return {
             "strategies": {sid: {"trades": s.trades, "win_rate": round(s.wins / s.trades, 3) if s.trades else 0.0,

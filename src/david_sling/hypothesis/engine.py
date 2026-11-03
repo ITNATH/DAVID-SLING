@@ -44,14 +44,18 @@ class HypothesisEngine:
         return state
 
     def check_invalidation(self, symbol: str, price: float) -> bool:
+        """G37: live invalidation - a broken thesis is marked FAILURE and reported."""
         thesis = self.theses.get(symbol)
         if thesis is None or thesis.invalidation_price is None:
             return False
+        hit = False
         if thesis.direction == "bullish":
-            return price < thesis.invalidation_price
-        if thesis.direction == "bearish":
-            return price > thesis.invalidation_price
-        return False
+            hit = price < thesis.invalidation_price
+        elif thesis.direction == "bearish":
+            hit = price > thesis.invalidation_price
+        if hit:
+            self.theses[symbol] = thesis.model_copy(update={"state": HypothesisStateValue.FAILURE})
+        return hit
 
     def get(self, symbol: str) -> HypothesisState | None:
         return self.theses.get(symbol)

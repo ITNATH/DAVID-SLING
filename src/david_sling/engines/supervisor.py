@@ -104,6 +104,15 @@ class EngineSupervisor:
                        (fusion.direction == "short" and candidate.direction == "short")
         if fusion.direction != "neutral" and not direction_ok:
             reasons.append("candidate direction disagrees with fusion")
+        # G35: per-engine context agreement - each engine gates on its OWN context TFs
+        ctx_scores = [fusion.layers.get(tf, 0.0) for tf in p.context_tfs if tf in fusion.layers]
+        if ctx_scores:
+            ctx_sum = sum(ctx_scores)
+            ctx_dir = 1 if ctx_sum > 0.05 else (-1 if ctx_sum < -0.05 else 0)
+            if ctx_dir != 0:
+                cand_dir = 1 if candidate.direction == "long" else -1
+                if cand_dir != ctx_dir:
+                    reasons.append(f"engine {engine_id} context {list(p.context_tfs)} disagrees with candidate")
         qualified = validation.passed and not reasons
         if qualified:
             self.states[engine_id] = "TRIGGERED"

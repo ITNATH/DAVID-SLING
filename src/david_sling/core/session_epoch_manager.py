@@ -35,10 +35,10 @@ def epoch_at(dt: datetime) -> SessionEpoch:
         return SessionEpoch.ASIA_LONDON_OVERLAP
     if 8 <= h < 13:
         return SessionEpoch.LONDON
-    if 13 <= h < 16:
-        return SessionEpoch.LONDON_NY_OVERLAP
     if 14 <= h < 15:
         return SessionEpoch.TEN_AM_CLUB
+    if 13 <= h < 16:
+        return SessionEpoch.LONDON_NY_OVERLAP
     if 16 <= h < 22:
         return SessionEpoch.NY
     return SessionEpoch.OFF_HOURS

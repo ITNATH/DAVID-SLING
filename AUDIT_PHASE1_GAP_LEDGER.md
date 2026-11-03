@@ -209,3 +209,28 @@ killzone, G34 no forward probs, G35 shared qualify, G33 no Gamma. Verdict: 90%+ 
 entry quality (G31/G34/G37/G40), not by filtering — empirical sweep pins WR ~35-37% across all
 gate levels. Fix priority: G31→G37→G34→G40→G41→G32→G35→G39→cost/latency items.
 Gates: pytest 48/48 · ruff clean · mypy 113 · arch audit PASS.
+
+---
+
+# FIX STATUS — Round 6 items implemented (2026-11-03)
+
+| Gap | Fix | Status |
+|---|---|---|
+| G31 | `CandleBuilder.candles(include_forming=False)` — pipeline `candles_by_tf` + M1 dedup now use CLOSED-only series; fires once per bar close (tested) | FIXED |
+| G32 | `epoch_at` branch order corrected — `TEN_AM_CLUB` (14–15 UTC) reachable again (tested) | FIXED |
+| G34 | new `intelligence/forecast.py`: calibrated P(up) for 5m/15m/30m/1H/4H/8H (ATR drift-diffusion net of half-spread), wired into pipeline + `/api/analysis/{symbol}` forecast (live-verified) | FIXED |
+| G35 | `EngineSupervisor.qualify` now gates each engine on its OWN context TFs via `fusion.layers` (tested: D vetoes macro-bearish, A unaffected) | FIXED |
+| G37 | `check_invalidation` marks thesis FAILURE and pipeline abstains that bar (`hypothesis_invalidated` rescan + ledger) (tested) | FIXED |
+| G39 | monitoring drift proposals now consumed: pipeline abstains on drifted strategy ids, `mark_drift_consumed` (tested) | FIXED |
+| G40 | `_dir()` returns None on neutral — vault abstains, no forced short bias (tested) | FIXED |
+| G41 | `max_positions_per_symbol: 1` in risk policy — no same-symbol pyramiding (tested) | FIXED |
+| G42 | backtest harness slippage 0.0 → 0.5 pt to match live sim; report regenerated net of slippage (WR ~33%, cost-realistic) | FIXED |
+| G43 | random news flag → deterministic calendar (`data/news_calendar.py`: NFP/CPI/FOMC + config dates) (tested) | FIXED |
+| G44 | per-bar `decision.context` ledger appends throttled 1/5s/symbol; `DAVID_SLING_LEDGER_FSYNC=0` durability switch | FIXED |
+| G45 | fusion budget overrun → graceful neutral-abstain fallback + rescan, bar never dropped | FIXED |
+| G46 | `assert_no_silent_drops` throttled to 1/5s | FIXED |
+
+Also fixed: two more `__import__` hacks in `_news_loop`; integration fixtures now use isolated
+ledger paths (removes cross-test hash-chain fork). Gates: **pytest 57/57 · ruff clean ·
+mypy strict 115 files · architecture audit PASS** · live server verified (ticks advancing,
+chain OK, forecast endpoint live, halt/resume OK, 16 health rows, watchdog OK, UI 200).

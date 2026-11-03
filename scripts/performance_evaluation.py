@@ -164,7 +164,7 @@ def run_engine(engine_id: str, tapes: dict[str, list[Candle]], specs: dict[str, 
     from david_sling.core.utils import new_id
 
     sup = make_supervisor(engine_id, min_conv)
-    broker = SimulatedBrokerAdapter(specs, slippage_points=0.0)
+    broker = SimulatedBrokerAdapter(specs, slippage_points=0.5)  # G42: match live sim cost
     sizing = SizingEngine({})
     trades: list[dict] = []
     equity = 100_000.0
@@ -249,7 +249,7 @@ def run_engine(engine_id: str, tapes: dict[str, list[Candle]], specs: dict[str, 
 def run_gamma_proforma(tapes: dict[str, list[Candle]], specs: dict[str, SymbolSpec]) -> dict:
     """PRO-FORMA only: 'Engine Gamma' HFT market-making does not exist in the codebase (gap G33).
     Simulated here as fade-the-spike scalping on V75/V25 with tight TP / wide SL."""
-    broker = SimulatedBrokerAdapter(specs, slippage_points=0.0)
+    broker = SimulatedBrokerAdapter(specs, slippage_points=0.5)  # G42
     trades: list[dict] = []
     equity = 100_000.0
     curve: list[tuple[datetime, float]] = [(START, equity)]

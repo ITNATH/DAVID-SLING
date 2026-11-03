@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 
 from david_sling.api.dependencies import get_runtime, require_token
+from david_sling.intelligence.forecast import forward_probabilities
 
 router = APIRouter(prefix="/api", tags=["analysis"], dependencies=[Depends(require_token)])
 
@@ -38,6 +39,7 @@ async def analysis_symbol(symbol: str, request: Request):
         "awareness": rt.awareness.snapshot(symbol).to_dict() if rt.awareness.snapshot(symbol) else None,
         "scenario": rt.scenario_engine.current.get(symbol).model_dump(mode="json") if rt.scenario_engine.current.get(symbol) else None,
         "fusion": rt.fusion.get(symbol).model_dump(mode="json") if rt.fusion.get(symbol) else None,
+        "forecast": (forward_probabilities(fs, rt.fusion.get(symbol)) if fs and rt.fusion.get(symbol) else None),
         "hypothesis": rt.hypothesis.get(symbol).model_dump(mode="json") if rt.hypothesis.get(symbol) else None,
         "grammar": rt.grammar.get(symbol).__dict__ if rt.grammar.get(symbol) else None,
         "features": {k: v for k, v in fs.__dict__.items() if k != "observations"} if fs else None,

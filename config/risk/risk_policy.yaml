@@ -5,7 +5,7 @@ risk:
     daily_loss_limit_pct: 3.00
     max_drawdown_pct: 8.00
     max_open_positions: 8
-    max_positions_per_symbol: 3
+    max_positions_per_symbol: 1   # no same-symbol pyramiding (G41)
     min_margin_level_pct: 200.0
     news_blackout: true
   exposure_policy:

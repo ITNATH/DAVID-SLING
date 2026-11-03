@@ -8,9 +8,12 @@ from fastapi.testclient import TestClient
 
 
 @pytest.fixture(scope="module")
-def runtime():
+def runtime(tmp_path_factory):
+    import os
+
     from david_sling.bootstrap.david_os_boot import DavidOSBoot
 
+    os.environ["DAVID_SLING_LEDGER_PATH"] = str(tmp_path_factory.mktemp("ledger") / "evidence_ledger.jsonl")
     rt = asyncio.run(DavidOSBoot(mode="sim").run(feed=True))
     asyncio.run(asyncio.sleep(2.5))  # let the feed produce ticks/candles
     yield rt

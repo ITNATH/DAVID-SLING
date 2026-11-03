@@ -25,8 +25,11 @@ GENESIS_HASH = "0" * 64
 
 
 class EvidenceLedger:
-    def __init__(self, persist_path: str | Path | None = None) -> None:
+    def __init__(self, persist_path: str | Path | None = None, *, fsync: bool | None = None) -> None:
         self._records: list[EvidenceRecord] = []
+        # G44: durability switch - default ON (tamper-evidence); DAVID_SLING_LEDGER_FSYNC=0
+        # disables per-append fsync for high-rate sim/backtest runs
+        self._fsync = fsync if fsync is not None else os.environ.get("DAVID_SLING_LEDGER_FSYNC", "1") == "1"
         self._persist_path = Path(persist_path) if persist_path else None
         if self._persist_path:
             self._persist_path.parent.mkdir(parents=True, exist_ok=True)
@@ -59,7 +62,8 @@ class EvidenceLedger:
         with self._persist_path.open("a", encoding="utf-8") as fh:
             fh.write(line + "\n")
             fh.flush()
-            os.fsync(fh.fileno())
+            if self._fsync:
+                os.fsync(fh.fileno())
 
     def _load(self) -> None:
         assert self._persist_path is not None

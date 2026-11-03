@@ -12,7 +12,7 @@ import asyncio
 import logging
 import os
 import pathlib
-import random
+import time
 from collections import deque
 from contextlib import suppress
 from datetime import datetime
@@ -22,8 +22,8 @@ from david_sling.alerts.engine import AlertEngine
 from david_sling.awareness.engine import AwarenessEngine
 from david_sling.configuration.configuration_engine import ConfigurationEngine
 from david_sling.control_panel.panel import ControlPanel
-from david_sling.core.errors import ExecutionError
-from david_sling.core.schemas import AlertLevel, SignalStatus, Timeframe
+from david_sling.core.errors import ExecutionError, FusionError
+from david_sling.core.schemas import AlertLevel, FusionSnapshot, SignalStatus, Timeframe
 from david_sling.core.utils import utc_now
 from david_sling.data.market import MarketSimulator
 from david_sling.data.state import MarketReconstruction
@@ -339,10 +339,10 @@ class Runtime:
         while self._running:
             if self.sim is not None:
                 for symbol in self.symbols.symbols():
-                    m1 = self.sim.candles(symbol, Timeframe.M1, limit=3)
+                    m1 = self.sim.candles(symbol, Timeframe.M1, limit=3, include_forming=False)
                     if not m1:
                         continue
-                    last = m1[-1]
+                    last = m1[-1]  # last CLOSED M1 candle - pipeline fires once per bar close
                     key = (symbol, last.open_time)
                     if key in seen:
                         continue
@@ -356,20 +356,23 @@ class Runtime:
             await asyncio.sleep(0.2)
 
     async def _news_loop(self) -> None:
-        rng = random.Random(42)
+        # G43: real calendar windows (NFP/CPI/FOMC + config dates), not a random coin flip
+        from datetime import timedelta
+
+        from david_sling.data.news_calendar import is_high_impact
+
         while self._running:
             await asyncio.sleep(5)
             now = self.clock_now()
             if self._news_until and now > self._news_until:
                 self.news_active = False
                 self._news_until = None
-                await self.alerts.emit(__import__("david_sling.core.schemas", fromlist=["AlertLevel"]).AlertLevel.INFO, "news blackout ended")
-            if not self.news_active and rng.random() < 0.02:
-                from datetime import timedelta
+                await self.alerts.emit(AlertLevel.INFO, "news blackout ended")
+            extra = self.cfg.get("news.calendar_dates", []) or []
+            if not self.news_active and is_high_impact(now, extra):
                 self.news_active = True
                 self._news_until = now + timedelta(minutes=30)
-                await self.alerts.emit(__import__("david_sling.core.schemas", fromlist=["AlertLevel"]).AlertLevel.CRITICAL,
-                                       "HIGH-IMPACT NEWS BLACKOUT ACTIVE (30 sim-min)")
+                await self.alerts.emit(AlertLevel.CRITICAL, "HIGH-IMPACT NEWS BLACKOUT ACTIVE (calendar window)")
 
     # ------------------------------------------------------------- status
     # -------------------------------------------------- control panel (engines)
@@ -452,9 +455,13 @@ class DecisionPipeline:
     def __init__(self, rt: Runtime) -> None:
         self.rt = rt
         self._last_scenario: dict[str, str] = {}
+        self._last_param_audit = 0.0          # G46: throttle per-bar silent-drop audit
+        self._last_ctx_log: dict[str, float] = {}  # G44: throttle per-bar decision.context appends
 
     def candles_by_tf(self, symbol: str) -> dict:
-        return {tf: self.rt.sim.candles(symbol, tf, limit=300) for tf in Timeframe} if self.rt.sim else {}
+        # G31: signal matrices see CLOSED candles only - the forming bar never leaks in
+        return ({tf: self.rt.sim.candles(symbol, tf, limit=300, include_forming=False)
+                 for tf in Timeframe} if self.rt.sim else {})
 
     def features_only(self, symbol: str):
         rt = self.rt
@@ -484,6 +491,11 @@ class DecisionPipeline:
         fs = self.features_only(symbol)
         if fs is None:
             return None
+        # G37: live thesis invalidation - abstain this bar when the structure is broken
+        if rt.hypothesis.check_invalidation(symbol, fs.price):
+            rt.rescan.rescan(symbol, "hypothesis_invalidation")
+            rt.ledger.append("hypothesis.invalidated", {"symbol": symbol, "price": fs.price})
+            return {"symbol": symbol, "abstain": "hypothesis_invalidated"}
         # fakeout rescan: liquidity sweep immediately rejected back inside the range
         if (fs.sweep_up_m5 and fs.price < fs.ema20_m1) or (fs.sweep_dn_m5 and fs.price > fs.ema20_m1):
             rt.rescan.rescan(symbol, "fakeout")
@@ -497,17 +509,39 @@ class DecisionPipeline:
         hypothesis = rt.hypothesis.build(fs, scenario)
         grammar = rt.grammar.validate(fs, scenario)
         assert hypothesis.state is not None and grammar.valid is not None  # pipeline invariant
-        fusion = rt.fusion.fuse(fs, self.candles_by_tf(symbol))
+        try:
+            fusion = rt.fusion.fuse(fs, self.candles_by_tf(symbol))
+        except FusionError:
+            # G45: budget overrun -> degrade to neutral abstain, never drop the bar silently
+            rt.rescan.rescan(symbol, "fusion_budget_exceeded")
+            fusion = FusionSnapshot(symbol=symbol, layers={}, convergence=0.0, direction="neutral",
+                                    conflicts=99, ts=utc_now())
         if fusion.conflicts > 2:
             rt.rescan.rescan(symbol, f"fusion_conflict:{fusion.conflicts}")
         validation = rt.validation.evaluate(fs, scenario, fusion)
-        rt.params.assert_no_silent_drops()
-        ev = rt.ledger.append("decision.context", {
-            "symbol": symbol, "scenario": scenario.scenario.value, "regime": regime.regime,
-            "fusion_direction": fusion.direction, "convergence": fusion.convergence,
-            "validation": validation.model_dump(mode="json"),
-        })
-        candidates = rt.vault.evaluate(fs) if validation.passed else []
+        now_m = time.monotonic()
+        if now_m - self._last_param_audit > 5.0:  # G46: audit at most every 5s, not per bar
+            rt.params.assert_no_silent_drops()
+            self._last_param_audit = now_m
+        # G44: decision.context ledger appends throttled to 1 per 5s per symbol
+        ev = None
+        if now_m - self._last_ctx_log.get(symbol, 0.0) > 5.0:
+            ev = rt.ledger.append("decision.context", {
+                "symbol": symbol, "scenario": scenario.scenario.value, "regime": regime.regime,
+                "fusion_direction": fusion.direction, "convergence": fusion.convergence,
+                "validation": validation.model_dump(mode="json"),
+            })
+            self._last_ctx_log[symbol] = now_m
+        # G34: calibrated forward probabilities per horizon (5m..8H)
+        from david_sling.intelligence.forecast import forward_probabilities
+
+        probs = forward_probabilities(fs, fusion)
+        # G39: close the learning loop - abstain on strategies flagged for concept drift
+        drifted = rt.monitoring.active_drift_strategies()
+        if drifted:
+            rt.monitoring.mark_drift_consumed()
+        candidates = [c for c in (rt.vault.evaluate(fs) if validation.passed else [])
+                      if c.strategy_id not in drifted]
         signal = None
         engine_rescanned = False
         for cand in candidates[:5]:
@@ -521,7 +555,7 @@ class DecisionPipeline:
             if not rt.precision.routable(precision):
                 continue
             ticket = rt.signal_engine.build(symbol, scenario, cand, route, engine_decision, precision,
-                                            evidence_ids=[ev.evidence_id])
+                                            evidence_ids=[ev.evidence_id] if ev is not None else [])
             rt.journal.signal(ticket.model_dump(mode="json"))
             await rt.bus.publish("signal.routed", ticket.model_dump(mode="json"))
             # L10 boundary -> L11 risk -> sizing -> L12 broker
@@ -553,4 +587,5 @@ class DecisionPipeline:
             break
         return {"symbol": symbol, "scenario": scenario.scenario.value, "regime": regime.regime,
                 "validation": validation.model_dump(mode="json"), "fusion": fusion.model_dump(mode="json"),
+                "forecast": probs, "drifted": sorted(drifted),
                 "candidates": len(candidates), "signal": signal.signal_id if signal else None}

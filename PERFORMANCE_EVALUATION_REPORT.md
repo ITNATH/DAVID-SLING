@@ -1,5 +1,5 @@
 # DAVID SLING — Institutional Performance Evaluation Report (SIMULATED)
-Generated: 2026-11-03T10:34:32.366804+00:00 · Horizon: 1998-01-02 → 2026-11-03 (28y, 10532 days) · Risk-free: 4.0%
+Generated: 2026-11-03T11:21:11.581922+00:00 · Horizon: 1998-01-02 → 2026-11-03 (28y, 10532 days) · Risk-free: 4.0%
 
 > **Data provenance:** the workspace contains no real 2006–2026 market data. All tapes are **seeded, regime-tagged synthetic daily series (1998–2026)**; engines are the real L8 `EngineSupervisor.qualify` gate, sizing is the real `SizingEngine`, PnL is the real `SimulatedBrokerAdapter` tick-value math (G11-corrected). 'Engine Gamma' does not exist in the codebase (audit gap G33) — its row is a clearly-labelled PRO-FORMA simulation. Figures are simulated estimates, not real fills.
 
@@ -13,19 +13,19 @@ Tenure/shock slicing shows the expected asymmetry: **TRUMP-1 (2017–2021)** is 
 
 | Engine | Total Return % | CAGR % | Max DD % | Avg DD (days) | Sharpe | Sortino | Profit Factor | Win Rate % | Expectancy (R) | Alpha % (vs SPX) | Beta | Trades | PnL USD |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A — Quant Scalping | -29.78 | -1.22 | 46.31 | 546.0 | 0.53 | 0.71 | 0.97 | 36.3 | 0.01 | 5.82 | 0.006 | 3481 | -29779.93 |
-| B — Tactical Intraday | 27.05 | 0.83 | 25.64 | 222.2 | 1.65 | 2.23 | 1.02 | 36.8 | 0.048 | 13.37 | -0.002 | 3428 | 27052.16 |
-| C — Swing Structural | 58.74 | 1.62 | 30.23 | 204.6 | 1.58 | 2.19 | 1.05 | 35.6 | 0.045 | 13.18 | 0.002 | 3475 | 58741.84 |
-| D — Macro Institutional | 81.37 | 2.09 | 26.97 | 101.9 | 1.36 | 1.89 | 1.09 | 34.8 | 0.061 | 14.24 | 0.005 | 3504 | 81365.08 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | -211.67 | -100.0 | 211.67 | 10407.0 | -0.9 | -0.9 | 0.0 | 0.5 | -0.992 | -276.8 | -0.174 | 1172 | -211665.69 |
+| A — Quant Scalping | -6.16 | -0.22 | 30.72 | 471.5 | 0.75 | 1.01 | 0.99 | 35.1 | 0.021 | 8.88 | -0.005 | 3422 | -6162.22 |
+| B — Tactical Intraday | 4.34 | 0.15 | 40.27 | 494.0 | 0.96 | 1.31 | 1.01 | 33.5 | 0.013 | 10.51 | 0.001 | 3486 | 4337.4 |
+| C — Swing Structural | 12.03 | 0.39 | 38.98 | 295.3 | 1.35 | 1.89 | 1.01 | 32.9 | 0.003 | 14.02 | 0.0 | 3607 | 12033.34 |
+| D — Macro Institutional | 72.36 | 1.91 | 25.39 | 116.6 | 1.41 | 2.0 | 1.06 | 33.0 | 0.036 | 14.79 | -0.003 | 3621 | 72357.78 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | -129990.91 | -100.0 | 129990.91 | 10446.0 | -2.56 | -2.53 | 0.0 | 0.6 | -0.989 | -11299.58 | 3.5 | 1166 | -129990909.01 |
 
 ## 3. Asset Class Breakdown
 
-- **COMMODITY** (3 instruments, 8558 trades): win rate 38.2%, expectancy 0.049R, PnL 86746.87 USD.
-- **CRYPTO** (3 instruments, 3975 trades): win rate 29.6%, expectancy 0.007R, PnL -8801.15 USD.
-- **FX** (3 instruments, 907 trades): win rate 40.2%, expectancy 0.094R, PnL 43478.84 USD.
-- **INDEX** (3 instruments, 338 trades): win rate 36.7%, expectancy 0.033R, PnL 1503.83 USD.
-- **SYNTHETIC** (3 instruments, 110 trades): win rate 44.5%, expectancy 0.248R, PnL 14450.76 USD.
+- **COMMODITY** (3 instruments, 9098 trades): win rate 36.6%, expectancy 0.006R, PnL -105485.84 USD.
+- **CRYPTO** (3 instruments, 3310 trades): win rate 22.0%, expectancy 0.000R, PnL 66507.48 USD.
+- **FX** (3 instruments, 1261 trades): win rate 41.3%, expectancy 0.143R, PnL 105108.60 USD.
+- **INDEX** (3 instruments, 293 trades): win rate 36.2%, expectancy 0.018R, PnL -1058.77 USD.
+- **SYNTHETIC** (3 instruments, 174 trades): win rate 40.2%, expectancy 0.134R, PnL 17494.83 USD.
 
 - **Gold (XAUUSD, primary weight):** steady positive expectancy in INFL-2022 and TRUMP-2 windows (safe-haven drift); largest single-trade R outliers occur in GFC-2008 (gap moves) — tail risk concentrated in jump-probability days.
 - **BTC (BTCUSD, primary weight):** highest per-trade R of the book in CRYPTO-2021/2024-26 (asset vol boost 1.6×), but the widest MDD contribution; ETH/SOL amplify the same effect with higher vol (0.055/0.07 daily).
@@ -39,136 +39,136 @@ Tenure/shock slicing shows the expected asymmetry: **TRUMP-1 (2017–2021)** is 
 ### BASELINE-98-99
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 214 | 42.1 | 0.133 | 15154.31 |
-| B — Tactical Intraday | 225 | 44.0 | 0.201 | 22079.39 |
-| C — Swing Structural | 219 | 44.3 | 0.27 | 28377.93 |
-| D — Macro Institutional | 206 | 38.8 | 0.135 | 14587.89 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 65 | 0.0 | -1.0 | -4851.25 |
+| A — Quant Scalping | 235 | 33.2 | -0.117 | -13408.4 |
+| B — Tactical Intraday | 212 | 32.5 | -0.066 | -10828.5 |
+| C — Swing Structural | 213 | 38.5 | 0.064 | 475.47 |
+| D — Macro Institutional | 212 | 42.5 | 0.181 | 14674.35 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 66 | 0.0 | -1.0 | -7957.2 |
 
 ### LTCM-1998
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 24 | 25.0 | -0.272 | -3418.25 |
-| B — Tactical Intraday | 26 | 38.5 | 0.097 | 1286.0 |
-| C — Swing Structural | 30 | 36.7 | 0.068 | 1724.87 |
-| D — Macro Institutional | 31 | 22.6 | -0.3 | -3457.53 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 4 | 0.0 | -1.0 | -290.3 |
+| A — Quant Scalping | 29 | 24.1 | -0.38 | -5460.83 |
+| B — Tactical Intraday | 26 | 23.1 | -0.308 | -5347.36 |
+| C — Swing Structural | 29 | 27.6 | -0.214 | -3244.8 |
+| D — Macro Institutional | 30 | 30.0 | -0.102 | -3364.88 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 10 | 0.0 | -1.0 | -630.72 |
 
 ### SEP11-2001
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 4 | 25.0 | -0.25 | -546.67 |
-| B — Tactical Intraday | 6 | 16.7 | -0.5 | -1791.72 |
-| C — Swing Structural | 4 | 50.0 | 0.5 | 2128.19 |
-| D — Macro Institutional | 3 | 66.7 | 1.0 | 1712.7 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 1 | 0.0 | -1.0 | -921.19 |
+| A — Quant Scalping | 4 | 100.0 | 1.711 | 2794.39 |
+| B — Tactical Intraday | 3 | 66.7 | 1.212 | 1633.9 |
+| C — Swing Structural | 2 | 50.0 | 0.5 | 943.25 |
+| D — Macro Institutional | 5 | 60.0 | 0.8 | 2277.48 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 3 | 0.0 | -1.0 | -6157.59 |
 
 ### DOTCOM-BUST
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 330 | 36.1 | 0.018 | -288.0 |
-| B — Tactical Intraday | 328 | 36.3 | 0.028 | 3675.62 |
-| C — Swing Structural | 340 | 39.4 | 0.108 | 28624.3 |
-| D — Macro Institutional | 329 | 33.4 | -0.044 | -1009.85 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 121 | 0.8 | -0.986 | -28756.76 |
+| A — Quant Scalping | 290 | 34.8 | -0.026 | -3889.34 |
+| B — Tactical Intraday | 316 | 34.2 | -0.044 | -3296.34 |
+| C — Swing Structural | 306 | 36.3 | -0.031 | 3407.18 |
+| D — Macro Institutional | 315 | 36.5 | 0.048 | 19467.48 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 117 | 0.0 | -0.994 | -217890.84 |
 
 ### BASELINE-06-16
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 1306 | 34.8 | -0.022 | -28001.87 |
-| B — Tactical Intraday | 1299 | 35.3 | 0.05 | 7685.64 |
-| C — Swing Structural | 1297 | 30.5 | -0.04 | -26497.9 |
-| D — Macro Institutional | 1308 | 31.6 | 0.031 | 4380.25 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 432 | 0.5 | -0.994 | -35469.52 |
+| A — Quant Scalping | 1296 | 32.8 | 0.006 | -19930.45 |
+| B — Tactical Intraday | 1318 | 28.0 | -0.039 | -31263.78 |
+| C — Swing Structural | 1406 | 27.7 | -0.049 | -24468.42 |
+| D — Macro Institutional | 1399 | 28.5 | -0.023 | -17641.55 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 423 | 0.2 | -0.996 | -22874670.77 |
 
 ### GFC-2008
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 74 | 31.1 | -0.033 | -2015.92 |
-| B — Tactical Intraday | 69 | 29.0 | -0.164 | -7057.3 |
-| C — Swing Structural | 71 | 23.9 | -0.14 | -6686.88 |
-| D — Macro Institutional | 70 | 20.0 | -0.137 | -6136.53 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 31 | 0.0 | -1.0 | -2134.74 |
+| A — Quant Scalping | 75 | 34.7 | -0.003 | 1035.88 |
+| B — Tactical Intraday | 72 | 30.6 | -0.105 | -2190.06 |
+| C — Swing Structural | 71 | 32.4 | -0.007 | 2432.15 |
+| D — Macro Institutional | 69 | 33.3 | 0.087 | 4659.53 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 22 | 0.0 | -1.0 | -891474.84 |
 
 ### EURO-2011
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 63 | 17.5 | -0.474 | -15350.66 |
-| B — Tactical Intraday | 67 | 28.4 | -0.296 | -12830.56 |
-| C — Swing Structural | 60 | 23.3 | -0.308 | -9778.59 |
-| D — Macro Institutional | 63 | 23.8 | -0.264 | -8882.64 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 21 | 0.0 | -1.0 | -3241.22 |
+| A — Quant Scalping | 62 | 32.3 | 0.02 | 1423.89 |
+| B — Tactical Intraday | 67 | 29.9 | 0.006 | 3608.39 |
+| C — Swing Structural | 63 | 31.7 | 0.234 | 6656.37 |
+| D — Macro Institutional | 67 | 29.9 | -0.022 | 5685.44 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 16 | 0.0 | -1.0 | -645437.73 |
 
 ### COVID-2020
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 30 | 50.0 | 0.336 | 4914.42 |
-| B — Tactical Intraday | 30 | 43.3 | 0.139 | 3431.36 |
-| C — Swing Structural | 38 | 47.4 | 0.222 | 4233.02 |
-| D — Macro Institutional | 35 | 42.9 | 0.225 | 3320.3 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 21 | 0.0 | -1.0 | -3430.05 |
+| A — Quant Scalping | 34 | 35.3 | -0.025 | -566.35 |
+| B — Tactical Intraday | 40 | 32.5 | -0.078 | -556.32 |
+| C — Swing Structural | 41 | 36.6 | 0.058 | 900.1 |
+| D — Macro Institutional | 47 | 38.3 | 0.134 | 3046.7 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 29 | 0.0 | -1.0 | -20468332.82 |
 
 ### INFL-2022
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 115 | 44.3 | 0.217 | 3790.58 |
-| B — Tactical Intraday | 105 | 43.8 | 0.114 | 7662.77 |
-| C — Swing Structural | 106 | 45.3 | 0.283 | 13349.09 |
-| D — Macro Institutional | 97 | 47.4 | 0.305 | 13821.63 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 39 | 0.0 | -0.991 | -22669.51 |
+| A — Quant Scalping | 115 | 46.1 | 0.27 | 12695.52 |
+| B — Tactical Intraday | 113 | 48.7 | 0.314 | 15885.62 |
+| C — Swing Structural | 124 | 39.5 | 0.048 | 5147.94 |
+| D — Macro Institutional | 130 | 36.9 | 0.057 | 8075.48 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 38 | 0.0 | -1.0 | -22657368.53 |
 
 ### TRUMP-1
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 476 | 36.8 | 0.026 | -42.36 |
-| B — Tactical Intraday | 468 | 37.0 | -0.018 | -16520.39 |
-| C — Swing Structural | 487 | 39.0 | 0.059 | -1676.52 |
-| D — Macro Institutional | 491 | 38.7 | 0.063 | 5934.07 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 184 | 0.0 | -0.999 | -14554.69 |
+| A — Quant Scalping | 485 | 33.8 | -0.004 | -5259.48 |
+| B — Tactical Intraday | 495 | 34.3 | 0.006 | -1615.04 |
+| C — Swing Structural | 504 | 32.1 | -0.04 | -1803.64 |
+| D — Macro Institutional | 520 | 33.5 | 0.03 | 22198.97 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 185 | 1.6 | -0.972 | -43320961.42 |
 
 ### DEEPSEEK-TECH-SHOCK
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 7 | 42.9 | -0.193 | -518.58 |
-| B — Tactical Intraday | 10 | 40.0 | -0.113 | -240.24 |
-| C — Swing Structural | 7 | 42.9 | 0.079 | 569.01 |
-| D — Macro Institutional | 10 | 50.0 | 0.125 | 565.1 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 7 | 0.0 | -1.0 | -3588.71 |
+| A — Quant Scalping | 10 | 20.0 | -0.4 | -2092.91 |
+| B — Tactical Intraday | 10 | 10.0 | -0.7 | -3826.59 |
+| C — Swing Structural | 9 | 22.2 | -0.314 | -1718.8 |
+| D — Macro Institutional | 15 | 13.3 | -0.633 | -8801.23 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 4 | 0.0 | -1.0 | -132769.05 |
 
 ### TRUMP-2
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 221 | 36.7 | 0.023 | -574.59 |
-| B — Tactical Intraday | 216 | 37.0 | 0.024 | 3619.1 |
-| C — Swing Structural | 222 | 40.1 | 0.128 | 16217.24 |
-| D — Macro Institutional | 218 | 41.3 | 0.183 | 26471.61 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 73 | 0.0 | -1.0 | -47010.16 |
+| A — Quant Scalping | 217 | 33.2 | -0.071 | -9212.68 |
+| B — Tactical Intraday | 229 | 33.6 | -0.073 | -10469.23 |
+| C — Swing Structural | 247 | 34.8 | -0.06 | -11803.89 |
+| D — Macro Institutional | 235 | 31.1 | -0.135 | -35584.73 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 61 | 0.0 | -1.0 | -626829.12 |
 
 ### CRYPTO-2021
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 142 | 34.5 | -0.072 | -6649.69 |
-| B — Tactical Intraday | 143 | 38.5 | 0.048 | 467.81 |
-| C — Swing Structural | 136 | 39.7 | 0.05 | 2030.32 |
-| D — Macro Institutional | 143 | 40.6 | 0.115 | 4752.76 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 57 | 0.0 | -1.0 | -13202.88 |
+| A — Quant Scalping | 125 | 33.6 | -0.043 | -2756.54 |
+| B — Tactical Intraday | 147 | 40.8 | 0.171 | 9050.98 |
+| C — Swing Structural | 141 | 41.8 | 0.162 | 12025.81 |
+| D — Macro Institutional | 150 | 39.3 | 0.223 | 21298.73 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 59 | 0.0 | -1.0 | -25289604.99 |
 
 ### CRYPTO-2024-26
 | Engine | Trades | Win % | Expectancy R | PnL USD |
 |---|---|---|---|---|
-| A — Quant Scalping | 391 | 35.0 | -0.035 | -13113.94 |
-| B — Tactical Intraday | 387 | 35.1 | -0.006 | -9043.37 |
-| C — Swing Structural | 394 | 39.3 | 0.114 | 19861.79 |
-| D — Macro Institutional | 396 | 40.7 | 0.179 | 42806.06 |
-| Gamma — HFT MM (PRO-FORMA, not in code) | 125 | 0.0 | -1.0 | -80563.44 |
+| A — Quant Scalping | 358 | 34.1 | -0.046 | -10117.59 |
+| B — Tactical Intraday | 371 | 36.1 | 0.003 | -2992.14 |
+| C — Swing Structural | 400 | 38.5 | 0.08 | 10326.47 |
+| D — Macro Institutional | 374 | 37.2 | 0.053 | 2246.05 |
+| Gamma — HFT MM (PRO-FORMA, not in code) | 112 | 0.0 | -0.996 | -9049621.83 |
 
 ## 5. Risk & Drawdown Analysis
 
-- **A — Quant Scalping**: MDD 46.31% with average drawdown duration 546.0 simulated days; Sharpe 0.53 / Sortino 0.71 (rf 4%); structural vulnerability = high frequency in trendless stress (GFC/COVID windows)
-- **B — Tactical Intraday**: MDD 25.64% with average drawdown duration 222.2 simulated days; Sharpe 1.65 / Sortino 2.23 (rf 4%); structural vulnerability = medium frequency, overlap-session exposure
-- **C — Swing Structural**: MDD 30.23% with average drawdown duration 204.6 simulated days; Sharpe 1.58 / Sortino 2.19 (rf 4%); structural vulnerability = swing exposure to gap moves (DEEPSEEK window)
-- **D — Macro Institutional**: MDD 26.97% with average drawdown duration 101.9 simulated days; Sharpe 1.36 / Sortino 1.89 (rf 4%); structural vulnerability = low frequency but concentrated macro bets (TRUMP-2 fiscal shock)
-- **Gamma — HFT MM (PRO-FORMA, not in code)**: MDD 211.67% with average drawdown duration 10407.0 simulated days; Sharpe -0.9 / Sortino -0.9 (rf 4%); structural vulnerability = negative skew: frequent small wins, rare large SLs on V75 gaps (tail-risk dominant)
+- **A — Quant Scalping**: MDD 30.72% with average drawdown duration 471.5 simulated days; Sharpe 0.75 / Sortino 1.01 (rf 4%); structural vulnerability = high frequency in trendless stress (GFC/COVID windows)
+- **B — Tactical Intraday**: MDD 40.27% with average drawdown duration 494.0 simulated days; Sharpe 0.96 / Sortino 1.31 (rf 4%); structural vulnerability = medium frequency, overlap-session exposure
+- **C — Swing Structural**: MDD 38.98% with average drawdown duration 295.3 simulated days; Sharpe 1.35 / Sortino 1.89 (rf 4%); structural vulnerability = swing exposure to gap moves (DEEPSEEK window)
+- **D — Macro Institutional**: MDD 25.39% with average drawdown duration 116.6 simulated days; Sharpe 1.41 / Sortino 2.0 (rf 4%); structural vulnerability = low frequency but concentrated macro bets (TRUMP-2 fiscal shock)
+- **Gamma — HFT MM (PRO-FORMA, not in code)**: MDD 129990.91% with average drawdown duration 10446.0 simulated days; Sharpe -2.56 / Sortino -2.53 (rf 4%); structural vulnerability = negative skew: frequent small wins, rare large SLs on V75 gaps (tail-risk dominant)
 
 Tail-risk note: jump-probability days (jp 3–4.5% in GFC/COVID/DEEPSEEK regimes) account for a disproportionate share of max-drawdown days for every engine; the live system's mitigations are the L11 risk gate (session cap 1.5%, daily loss 3.0%, DD 8.0%), the news filter, and the emergency halt (G13) — the backtest deliberately bypasses them to show raw engine behavior.
 
@@ -179,30 +179,30 @@ stack is the L8 `min_convergence` gate; sweeping it shows the tradeoff empirical
 
 | Engine | min_convergence | Trades | Win Rate % | Expectancy R | PnL USD |
 |---|---|---|---|---|---|
-| A | 0.45 | 3481 | 36.3 | 0.01 | -29779.93 |
-| A | 0.55 | 3535 | 36.1 | 0.026 | -2952.14 |
-| A | 0.65 | 3651 | 33.5 | 0.014 | 26203.91 |
-| A | 0.75 | 3135 | 33.2 | 0.034 | 130541.25 |
-| A | 0.85 | 1311 | 21.1 | -0.111 | -12412.1 |
-| A | 0.95 | 576 | 0.9 | -0.259 | -5707.12 |
-| B | 0.45 | 3428 | 36.8 | 0.048 | 27052.16 |
-| B | 0.55 | 3469 | 36.1 | 0.057 | 62895.98 |
-| B | 0.65 | 3581 | 33.7 | 0.025 | 47559.81 |
-| B | 0.75 | 3076 | 33.2 | 0.036 | 122035.7 |
-| B | 0.85 | 1279 | 21.4 | -0.11 | -12557.04 |
-| B | 0.95 | 549 | 0.9 | -0.259 | -5440.41 |
-| C | 0.45 | 3450 | 35.9 | 0.052 | 41296.08 |
-| C | 0.55 | 3475 | 35.6 | 0.045 | 58741.84 |
-| C | 0.65 | 3554 | 33.5 | 0.016 | 35444.48 |
-| C | 0.75 | 2914 | 33.1 | 0.034 | 112258.6 |
-| C | 0.85 | 1181 | 21.9 | -0.087 | -6126.14 |
-| C | 0.95 | 505 | 1.0 | -0.227 | -4999.75 |
-| D | 0.45 | 3461 | 35.7 | 0.054 | 45692.83 |
-| D | 0.55 | 3458 | 34.7 | 0.016 | 3451.25 |
-| D | 0.65 | 3519 | 34.3 | 0.041 | 84893.02 |
-| D | 0.75 | 2591 | 33.2 | 0.055 | 107134.56 |
-| D | 0.85 | 995 | 21.6 | -0.038 | -496.44 |
-| D | 0.95 | 451 | 0.7 | -0.135 | -4772.54 |
+| A | 0.45 | 3422 | 35.1 | 0.021 | -6162.22 |
+| A | 0.55 | 3531 | 32.6 | -0.015 | -15342.1 |
+| A | 0.65 | 3773 | 32.8 | 0.015 | 85818.08 |
+| A | 0.75 | 3034 | 31.6 | 0.01 | 119833.39 |
+| A | 0.85 | 1249 | 20.4 | -0.11 | 27805.27 |
+| A | 0.95 | 629 | 1.3 | -0.316 | -5352.88 |
+| B | 0.45 | 3486 | 33.5 | 0.013 | 4337.4 |
+| B | 0.55 | 3552 | 34.2 | 0.027 | 48834.78 |
+| B | 0.65 | 3631 | 33.0 | 0.016 | 106929.29 |
+| B | 0.75 | 2938 | 32.2 | 0.019 | 122267.03 |
+| B | 0.85 | 1201 | 21.2 | -0.094 | 29864.34 |
+| B | 0.95 | 582 | 1.4 | -0.302 | -4652.88 |
+| C | 0.45 | 3514 | 33.0 | 0.014 | 11656.24 |
+| C | 0.55 | 3607 | 32.9 | 0.003 | 12033.34 |
+| C | 0.65 | 3589 | 32.7 | 0.014 | 47252.48 |
+| C | 0.75 | 2749 | 32.3 | 0.036 | 125919.18 |
+| C | 0.85 | 1095 | 21.3 | -0.057 | 25290.8 |
+| C | 0.95 | 528 | 1.5 | -0.219 | -3867.88 |
+| D | 0.45 | 3519 | 33.4 | 0.031 | 21556.77 |
+| D | 0.55 | 3668 | 33.3 | 0.018 | 38630.34 |
+| D | 0.65 | 3529 | 34.5 | 0.074 | 221606.93 |
+| D | 0.75 | 2499 | 32.6 | 0.079 | 154258.42 |
+| D | 0.85 | 937 | 20.5 | 0.013 | 28655.56 |
+| D | 0.95 | 483 | 1.4 | -0.089 | -3252.55 |
 
 **Verdict on 94%:** at the gate levels needed to approach 94% WR (>=0.85-0.95) trade count collapses
 to a handful of cherry-picked setups and expectancy/PnL deteriorate — selection bias, not edge.
