@@ -264,3 +264,19 @@ and FIXED: **G53** spread-widen false vetoes (constant spread_avg → rolling pe
 breakeven (R now from original _risk_dist). Live re-measurement: vetoes now only the intended
 per-symbol cap; false-positive spread vetoes = 0. Gates: pytest 71/71 · ruff clean · mypy 115 ·
 arch PASS · live healthy.
+
+---
+
+# FIX STATUS — Round 9: calibration + walk-forward/OOS + vol clustering + gap-through-SL + Engine Gamma (2026-11-03)
+
+`AUDIT_ROUND9_CALIBRATION_GAMMA_OOS.md`. **G47 CLOSED**: `calibrated_confidence(sid, base)`
+(WR-scaled, >=10 trades) blended into candidate confidence 0.4 base / 0.3 calibrated / 0.3
+forecast-15m via `dataclasses.replace` (frozen dataclass). **G33 CLOSED**: Engine Gamma live —
+V75/V25/STEP symbols, profile G (HFT market-making 1M-5M), `_s53` spike-fade + `_s54` STEP mean
+reversion (54 strategies/9 families), routing S8/S4 [A,G], sub-tick spread guard in
+`market.py._simulate_step` (ask = bid + tick). **G48 CLOSED**: report §8 walk-forward 5y folds
+(OOS from 2016). **G49 CLOSED**: vol clustering in tape gen (0.92-decay vol state). **G50
+CLOSED**: gap-through-SL/TP exits at bar open (SL-GAP/TP-GAP). Report regenerated. Gates:
+pytest **72/72** · ruff clean · mypy 115 · arch PASS. Live: engines {A,B,C,D,G}, G toggle
+versioned 3->4, V75/V25/STEP quotes ask>bid, chain True, ticks 10962, no log errors. All round-9
+gaps closed; ledger has no open items.

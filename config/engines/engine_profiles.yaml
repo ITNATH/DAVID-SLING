@@ -27,3 +27,10 @@ engines:
     trigger_tfs: [H4, H8]
     confirmation: [Multi-CDT]
     enabled: true
+  G:
+    name: Gamma HFT Market-Making
+    horizon: "1M-5M"
+    context_tfs: [D1, H1]
+    trigger_tfs: [M1, M5]
+    confirmation: [1CDT]
+    enabled: true

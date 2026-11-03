@@ -151,3 +151,23 @@ def test_G43_news_calendar():
     assert is_high_impact(datetime(2026, 11, 11, 18, 30)) is True         # FOMC Wed mid-month
     assert is_high_impact(datetime(2026, 1, 28, 13, 40), ["2026-01-28 13:30"]) is True
     assert is_high_impact(datetime(2026, 1, 28, 20, 0), ["2026-01-28 13:30"]) is False
+
+
+def test_G47_calibrated_confidence():
+    from david_sling.monitoring_learning.engine import MonitoringEngine
+
+    m = MonitoringEngine()
+    assert m.calibrated_confidence("S99", 0.7) == 0.7  # <10 trades -> base
+
+    class T:
+        pnl = 1.0
+
+    for _ in range(20):  # 100% wins -> confidence rises, clamped <= 0.99
+        m.record_outcome("S01", T())
+    cal = m.calibrated_confidence("S01", 0.6)
+    assert cal > 0.6 and cal <= 0.99
+    for _ in range(20):  # now losing -> win rate drops to 50%
+        T.pnl = -1.0
+        m.record_outcome("S01", T())
+    cal2 = m.calibrated_confidence("S01", 0.6)
+    assert cal2 < cal

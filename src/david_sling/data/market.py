@@ -152,8 +152,11 @@ class CandleBuilder:
         ts = (state.last_tick.ts + advance_ts) if (state.last_tick and advance_ts) else SIM_EPOCH
         spread = spec.spread_points * spec.tick_size
         mid = state.price
-        tick = Tick(symbol=spec.name, bid=round(mid - spread / 2, spec.digits),
-                    ask=round(mid + spread / 2, spec.digits), ts=ts)
+        bid = round(mid - spread / 2, spec.digits)
+        ask = round(mid + spread / 2, spec.digits)
+        if ask <= bid:  # digit rounding can collapse a sub-tick spread - enforce one tick
+            ask = round(bid + spec.tick_size, spec.digits)
+        tick = Tick(symbol=spec.name, bid=bid, ask=ask, ts=ts)
         validate_tick(tick, now=ts, last_ts=state.last_tick.ts if state.last_tick else None,
                       prev_mid=prev, recent_moves=state.recent_moves)
         state.recent_moves.append(state.price - prev)

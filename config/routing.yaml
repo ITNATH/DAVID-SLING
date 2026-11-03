@@ -5,11 +5,11 @@ routing:
     S1: [A, B]     # trend continuation
     S2: [B, C]     # trend failure
     S3: [B, C]     # pullback
-    S4: [A, B]     # momentum
+    S4: [A, G]     # momentum
     S5: [A, B]     # breakout
     S6: [B, C]     # breakout continuation
     S7: [A, B]     # breakout failure
-    S8: [A, B]     # fakeout
+    S8: [A, G]     # fakeout (Gamma fades the spike)
     S9: [A, B, C]  # liquidity sweep
     S10: [B, C, D] # reversal
     S11: [A, B]    # expansion

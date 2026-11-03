@@ -1,4 +1,4 @@
-"""Strategy vault (52 strategies / 8 families) and peer engine tests."""
+"""Strategy vault (54 strategies / 9 families) and peer engine tests (A-D + G)."""
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -19,13 +19,13 @@ def _fs(**kw) -> FeatureSet:
     return FeatureSet(**base)
 
 
-def test_vault_has_52_strategies_in_8_families():
+def test_vault_has_54_strategies_in_9_families():
     all_s = STRATEGY_VAULT.all()
-    assert len(all_s) == 52
+    assert len(all_s) == 54
     families = {s.family for s in all_s}
-    assert len(families) == 8
+    assert len(families) == 9
     assert [s.sid for s in all_s][:4] == ["S01", "S02", "S03", "S04"]
-    assert all_s[-1].sid == "S52"
+    assert all_s[-1].sid == "S54"
 
 
 def test_strategies_fire_on_matching_patterns():
@@ -46,10 +46,11 @@ def test_peer_dependency_guard_blocks_engine_to_engine_import():
         peer_dependency_guard("david_sling.engines.quant_scalping.tactical_intraday")
 
 
-def test_four_engine_profiles():
+def test_five_engine_profiles():
     sup = EngineSupervisor()
-    assert set(sup.profiles) == {"A", "B", "C", "D"}
+    assert set(sup.profiles) == {"A", "B", "C", "D", "G"}
     assert sup.profiles["A"].horizon == "15M-30M"
     assert sup.profiles["D"].horizon == "8H-Daily"
+    assert sup.profiles["G"].horizon == "1M-5M"  # Gamma HFT market-making
     h = sup.health()
-    assert set(h) == {"A", "B", "C", "D"}
+    assert set(h) == {"A", "B", "C", "D", "G"}

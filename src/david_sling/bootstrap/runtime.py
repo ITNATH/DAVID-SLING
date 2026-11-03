@@ -549,6 +549,12 @@ class DecisionPipeline:
             rt.monitoring.mark_drift_consumed()
         candidates = [c for c in (rt.vault.evaluate(fs) if validation.passed else [])
                       if c.strategy_id not in drifted]
+        # G47: blend hardcoded rule confidence with calibrated WR + forecast P(win) at 15m
+        import dataclasses
+
+        candidates = [dataclasses.replace(c, confidence=round(
+            0.4 * c.confidence + 0.3 * rt.monitoring.calibrated_confidence(c.strategy_id, c.confidence)
+            + 0.3 * probs.get("15m", 0.5), 4)) for c in candidates]
         signal = None
         engine_rescanned = False
         for cand in candidates[:5]:

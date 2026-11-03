@@ -24,7 +24,7 @@ from david_sling.core.schemas import (
 from david_sling.core.utils import utc_now
 from david_sling.strategies.vault import SetupCandidate
 
-ENGINE_LITERAL = Literal['A', 'B', 'C', 'D']
+ENGINE_LITERAL = Literal['A', 'B', 'C', 'D', 'G']
 
 # peer dependency guard: engine modules must never import sibling engine modules
 _FORBIDDEN = {"quant_scalping", "tactical_intraday", "swing_structural", "macro_institutional"}
@@ -57,6 +57,7 @@ PROFILES: dict[str, EngineProfile] = {
     "B": EngineProfile("B", "Tactical Intraday", "1H-4H", ("H4", "H1"), ("M15", "M30"), ("2CDT", "3CDT"), 0.50, 3),
     "C": EngineProfile("C", "Swing Structural", "4H-8H", ("D1", "H4"), ("H1", "H4"), ("3CDT", "4CDT"), 0.55, 4),
     "D": EngineProfile("D", "Macro Institutional", "8H-Daily", ("W1", "MN1", "D1"), ("H4", "H8"), ("Multi-CDT",), 0.60, 4),
+    "G": EngineProfile("G", "Gamma HFT Market-Making", "1M-5M", ("D1", "H1"), ("M1", "M5"), ("1CDT",), 0.40, 2),
 }
 
 

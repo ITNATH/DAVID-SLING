@@ -361,6 +361,21 @@ def _s52(fs: FeatureSet, d: Direction) -> SetupCandidate | None:  # edge-decay r
     return None
 
 
+# ---------------------------------------------------------------- Family 9: Gamma MM
+def _s53(fs: FeatureSet, d: Direction) -> SetupCandidate | None:  # fade synthetic spike
+    if fs.symbol in ("V75", "V25") and abs(fs.delta_m1) > 2.0 and fs.volume_z_m1 > 2.0:
+        fade: Direction = "short" if fs.delta_m1 > 0 else "long"
+        return _mk(_VAULT["S53"], fs, fade, sl_atr=0.8, rr=1.5, conf=0.6)
+    return None
+
+
+def _s54(fs: FeatureSet, d: Direction) -> SetupCandidate | None:  # step index reversion
+    if fs.symbol == "STEP" and fs.atr_m1 > 0 and abs(fs.price - fs.ema20_m1) > 3 * fs.atr_m1:
+        rev: Direction = "short" if fs.price > fs.ema20_m1 else "long"
+        return _mk(_VAULT["S54"], fs, rev, sl_atr=1.0, rr=2.0, conf=0.65)
+    return None
+
+
 _SPECS: list[tuple[str, str, str, tuple[str, ...], Callable]] = [
     # Family 1 - Orderflow & Microstructure (Engine A)
     ("S01", "Hawkes Burst Sniper", "orderflow_microstructure", ("A",), _s01),
@@ -422,6 +437,8 @@ _SPECS: list[tuple[str, str, str, tuple[str, ...], Callable]] = [
     ("S50", "Monthly Liquidity Sweep", "macro_statistical", ("D",), _s50),
     ("S51", "Macro Trend Pyramid", "macro_statistical", ("D",), _s51),
     ("S52", "Edge-Decay Rotation", "macro_statistical", ("D",), _s52),
+    ("S53", "Synthetic Spike Fade (Gamma)", "gamma_mm", ("G",), _s53),
+    ("S54", "Step Index Mean Reversion (Gamma)", "gamma_mm", ("G",), _s54),
 ]
 
 
@@ -466,3 +483,4 @@ def get_strategy(sid: str) -> BaseStrategy:
 
 # late binding for _mk helper references
 _VAULT = {s.sid: s for s in STRATEGY_VAULT.all()}
+

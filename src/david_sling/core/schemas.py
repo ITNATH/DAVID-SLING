@@ -211,14 +211,14 @@ class HypothesisState(StrictModel):
 
 # ----------------------------------------------------------- decision schemas
 class RouteDecision(StrictModel):
-    engine: Literal["A", "B", "C", "D", "NO_ROUTE"]
+    engine: Literal["A", "B", "C", "D", "G", "NO_ROUTE"]
     score: float
     explanation: list[str] = Field(default_factory=list)
     ts: datetime
 
 
 class EngineDecision(StrictModel):
-    engine: Literal["A", "B", "C", "D"]
+    engine: Literal["A", "B", "C", "D", "G"]
     qualified: bool
     setup: str | None = None
     reasons: list[str] = Field(default_factory=list)

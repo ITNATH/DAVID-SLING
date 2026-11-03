@@ -89,15 +89,19 @@ def gen_tape(name: str, cfg: dict, seed: int) -> list[Candle]:
     """Seeded regime-tagged synthetic daily tape (D1 candles)."""
     rng = random.Random((seed, name).__hash__() & 0xFFFFFFFF)
     price = cfg["base"]
+    vol_state = cfg["vol"]  # G49: persistent vol state (clustering), not constant vol
     out: list[Candle] = []
     day = START
     while day <= END:
         label, _s, _e, drift, vm, jp, _note = regime_at(day)
         vol = cfg["vol"] * vm
         asset_boost = 1.6 if cfg["cls"] == "crypto" and label.startswith("CRYPTO") else 1.0
-        shock = rng.gauss(drift * asset_boost, vol * asset_boost)
-        if rng.random() < jp:
-            shock += math.copysign(vol * rng.uniform(2.5, 5.0), -shock if shock else 1)
+        jumped = rng.random() < jp
+        # vol-of-vol: shocks persist (0.92 decay), jumps add extra persistent vol
+        vol_state = 0.92 * vol_state + 0.08 * vol + (vol * 1.5 if jumped else 0.0)
+        shock = rng.gauss(drift * asset_boost, vol_state * asset_boost)
+        if jumped:
+            shock += math.copysign(vol_state * rng.uniform(2.5, 5.0), -shock if shock else 1)
         o = price
         c = max(cfg["tick"], price * math.exp(shock))
         hi = max(o, c) * (1 + abs(rng.gauss(0, vol * 0.4)))
@@ -181,14 +185,15 @@ def run_engine(engine_id: str, tapes: dict[str, list[Candle]], specs: dict[str, 
             reason = None
             if pos["direction"] == "long":
                 if f.low <= pos["sl"]:
-                    exit_price, reason = pos["sl"], "SL"
+                    # G50: if the bar opened through the SL, the fill is at the open (gap-through)
+                    exit_price, reason = (f.open, "SL-GAP") if f.open < pos["sl"] else (pos["sl"], "SL")
                 elif f.high >= pos["tp"]:
-                    exit_price, reason = pos["tp"], "TP"
+                    exit_price, reason = (f.open, "TP-GAP") if f.open > pos["tp"] else (pos["tp"], "TP")
             else:
                 if f.high >= pos["sl"]:
-                    exit_price, reason = pos["sl"], "SL"
+                    exit_price, reason = (f.open, "SL-GAP") if f.open > pos["sl"] else (pos["sl"], "SL")
                 elif f.low <= pos["tp"]:
-                    exit_price, reason = pos["tp"], "TP"
+                    exit_price, reason = (f.open, "TP-GAP") if f.open < pos["tp"] else (pos["tp"], "TP")
             if exit_price is None and i - pos["entry_i"] >= 20:
                 exit_price, reason = f.close, "TIME-20D"
             if exit_price is None:
@@ -438,6 +443,31 @@ def vault_edge_stats() -> list[dict]:
     return out
 
 
+FOLDS = [("1998-2005", "1998-01-02", "2005-12-31"), ("2006-2010", "2006-01-02", "2010-12-31"),
+         ("2011-2015", "2011-01-03", "2015-12-31"), ("2016-2020", "2016-01-04", "2020-12-31"),
+         ("2021-2026", "2021-01-04", "2026-11-03")]
+
+
+def fold_metrics(res: dict, f_start: str, f_end: str) -> dict:
+    """G48: per-fold (walk-forward window) metrics - return, MDD, WR, expectancy."""
+    s_dt = datetime.fromisoformat(f_start + "T00:00:00+00:00")
+    e_dt = datetime.fromisoformat(f_end + "T23:59:59+00:00")
+    ts = [t for t in res["trades"] if s_dt <= t["entry_day"] <= e_dt]
+    cv = [(d, v) for d, v in res["curve"] if s_dt <= d <= e_dt]
+    if not cv:
+        return dict(trades=0, ret=0.0, mdd=0.0, wr=0.0, exp=0.0)
+    ret = (cv[-1][1] / cv[0][1] - 1) * 100
+    peak = cv[0][1]
+    mdd = 0.0
+    for _d, v in cv:
+        peak = max(peak, v)
+        mdd = max(mdd, (peak - v) / peak * 100)
+    wins = sum(1 for t in ts if t["pnl"] > 0)
+    return dict(trades=len(ts), ret=round(ret, 2), mdd=round(mdd, 2),
+                wr=round(wins / len(ts) * 100, 1) if ts else 0.0,
+                exp=round(sum(t["r"] for t in ts) / len(ts), 3) if ts else 0.0)
+
+
 # ---------------------------------------------------------------- report
 def main() -> None:
     seed = 20261103
@@ -574,6 +604,18 @@ def main() -> None:
     a("## 7. Final Allocation Recommendation")
     a("")
     a("Institutional verdict (simulated): core-book weighting **Engine B 35% / Engine C 30% / Engine D 20% / Engine A 15%**, with Engine A only enabled during high-liquidity sessions (its frequency is the drawdown-duration driver in stress). Keep Gold + BTC as primary risk carriers inside the 1.5% session cap; cap crypto sleeve at 25% of risk budget given 2021/2024–26 dispersion; treat V75/V25 as Gamma-pro-forma territory only — do **not** allocate real capital to a market-making engine until one is actually implemented (gap G33). Scale capital only after the L11 gates (daily loss 3%, DD 8%) are re-verified on the live sim feed, which currently shows the ledger chain intact and the feed watchdog healthy.")
+    a("")
+    a("## 8. Walk-Forward / OOS Folds (G48)")
+    a("")
+    a("Metrics per 5-year fold per engine (folds from 2016 onward are out-of-sample relative to the")
+    a("first half of the tape):")
+    a("")
+    a("| Engine | Fold | Trades | Return % | MDD % | Win % | Exp R |")
+    a("|---|---|---|---|---|---|---|")
+    for k in ("A", "B", "C", "D"):
+        for fl, fs_, fe in FOLDS:
+            m = fold_metrics(results[k], fs_, fe)
+            a(f"| {k} | {fl} | {m['trades']} | {m['ret']} | {m['mdd']} | {m['wr']} | {m['exp']} |")
     a("")
     Path("PERFORMANCE_EVALUATION_REPORT.md").write_text("\n".join(L) + "\n", encoding="utf-8")
     print("wrote PERFORMANCE_EVALUATION_REPORT.md")

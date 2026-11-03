@@ -101,7 +101,7 @@ def test_api_engine_controls_endpoints(tmp_path, monkeypatch):
     r = client.get("/api/control/engines")
     assert r.status_code == 200
     body = r.json()
-    assert set(body["engines"]) == {"A", "B", "C", "D"}
+    assert set(body["engines"]) == {"A", "B", "C", "D", "G"}
     assert all(e["enabled"] for e in body["engines"].values())
     r2 = client.post("/api/control/engines/D", json={"enabled": False, "actor": "pytest"})
     assert r2.status_code == 200 and r2.json()["enabled"] is False

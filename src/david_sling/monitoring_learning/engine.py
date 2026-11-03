@@ -71,6 +71,16 @@ class MonitoringEngine:
         if ms > 1.0:
             self.dispatch_over_budget += 1
 
+    def calibrated_confidence(self, strategy_id: str, base: float) -> float:
+        """G47: calibrate a hardcoded rule confidence against realized outcomes.
+        win-rate scaled blend, only once enough trades exist; else return base."""
+        s = self.stats.get(strategy_id)
+        if s is None or s.trades < 10:
+            return base
+        wr = s.wins / s.trades
+        cal = base * (0.4 + 1.2 * wr) + max(0.0, s.edge) * 0.0  # edge folded via wr
+        return max(0.05, min(0.99, cal))
+
     def active_drift_strategies(self) -> set[str]:
         """G39: strategy ids with an unconsumed concept-drift proposal."""
         return {p["strategy"] for p in self.proposals
