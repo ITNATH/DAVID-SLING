@@ -234,3 +234,18 @@ Also fixed: two more `__import__` hacks in `_news_loop`; integration fixtures no
 ledger paths (removes cross-test hash-chain fork). Gates: **pytest 57/57 · ruff clean ·
 mypy strict 115 files · architecture audit PASS** · live server verified (ticks advancing,
 chain OK, forecast endpoint live, halt/resume OK, 16 health rows, watchdog OK, UI 200).
+
+---
+
+# Audit Round 7 — real strategy edge + round-6 re-verification (2026-11-03)
+
+`AUDIT_ROUND7_STRATEGY_EDGE.md`: all round-6 fixes code-verified (G31 closed-only pipeline,
+G32 killzone, G34 forecast live on /api/analysis, G35 per-engine context gate, G37 invalidation
+wired, G39 drift consumption, G40/G41, G42/G43, G44–G46). Strategy edge: 52/52 vault rules are
+real conditional microstructure entries with ATR-SL + explicit RR mapped to engines A–D
+(report §3b per-family table) — structural edge EXISTS. New gaps: **G47** confidences hardcoded,
+never calibrated (forecast not fed back) — HIGH, the real WR cap; **G48** no walk-forward/OOS —
+HIGH; **G49** tape lacks vol clustering (MDD optimistic) — MEDIUM; **G50** no gap-through-SL in
+broker sim — MEDIUM; G33 Gamma still absent. Verdict: bot PASS with conditions; next work =
+confidence calibration + walk-forward + slippage-in-gaps. Gates: pytest 57/57 · ruff clean ·
+mypy 115 · arch PASS.

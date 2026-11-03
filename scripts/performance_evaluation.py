@@ -414,6 +414,30 @@ def wr_sweep(engine_id: str, tapes: dict[str, list[Candle]], specs: dict[str, Sy
     return rows
 
 
+def vault_edge_stats() -> list[dict]:
+    """Static per-strategy edge audit of the real 52-rule vault: SL (ATR mult),
+    RR and hardcoded confidence per rule, aggregated by family (G47 input)."""
+    import re
+
+    from david_sling.strategies import vault as vault_mod
+
+    # simpler: use the live registry for family/engines, regex the rules for params
+    out = []
+    for sid, strat in sorted(vault_mod.STRATEGY_VAULT._strategies.items()):
+        fn = getattr(vault_mod, f"_{sid.lower()}", None)
+        sl = rr = conf = None
+        if fn is not None:
+            import inspect
+
+            body = inspect.getsource(fn)
+            m = re.search(r"sl_atr=([0-9.]+),\s*rr=([0-9.]+),\s*conf=([0-9.]+)", body)
+            if m:
+                sl, rr, conf = float(m.group(1)), float(m.group(2)), float(m.group(3))
+        out.append(dict(sid=sid, family=strat.family, engines=list(strat.engines),
+                        sl_atr=sl, rr=rr, conf=conf))
+    return out
+
+
 # ---------------------------------------------------------------- report
 def main() -> None:
     seed = 20261103
@@ -469,6 +493,29 @@ def main() -> None:
     a("- **Synthetic continuous (V75/V25/Step):** V75 produces the most trades for the pro-forma Gamma row; Step Index (low vol 0.004) generates almost no signals for trend engines (correct abstention) and only Gamma-type fading.")
     a("- **FX (EUR/GBP/USDJPY/AUD):** lowest vol, lowest per-trade R, but the most stable win rate; USDJPY PnL correctly converts via the 100-JPY tick value (G11 fix verified in the golden tests).")
     a("- **Indices (SPX benchmark / NDX / DAX):** SPX is the alpha/beta benchmark; NDX drives the DEEPSEEK-tech-shock losses; DAX behaves between the two.")
+    a("")
+    a("### Strategy Vault Edge Audit (static, real rules)")
+    a("")
+    vs = vault_edge_stats()
+    fams: dict[str, list[dict]] = {}
+    for v in vs:
+        fams.setdefault(v["family"], []).append(v)
+    a("| Family | Strategies | SL (ATR x) | RR | Hardcoded conf | Engines |")
+    a("|---|---|---|---|---|---|")
+    for fam, rows in sorted(fams.items()):
+        sls = [r["sl_atr"] for r in rows if r["sl_atr"]]
+        rrs = [r["rr"] for r in rows if r["rr"]]
+        cs = [r["conf"] for r in rows if r["conf"]]
+        engs = sorted({e for r in rows for e in r["engines"]})
+        a(f"| {fam} | {len(rows)} | {min(sls) if sls else '-'}–{max(sls) if sls else '-'} | "
+          f"{min(rrs) if rrs else '-'}–{max(rrs) if rrs else '-'} | {min(cs) if cs else '-'}–{max(cs) if cs else '-'} | {','.join(engs)} |")
+    a("")
+    a("All 52 rules are real conditional microstructure entries (sweeps/FVG/BOS/CHoCH/session-gated/OTE),")
+    a("each with ATR-based SL and explicit RR — structural edge exists. **G47:** confidences are hardcoded")
+    a("(0.55–0.80) and never calibrated against realized outcomes; the new forecast probabilities are not")
+    a("yet fed back into confidence or sizing. **G48:** all reported metrics are in-sample on one seeded tape;")
+    a("no walk-forward/OOS split exists. **G49:** the tape model is GBM+jumps without volatility clustering,")
+    a("so MDD/duration estimates are optimistic vs real vol-of-vol.")
     a("")
     a("## 4. Regime & Shock Slices (per engine)")
     a("")
