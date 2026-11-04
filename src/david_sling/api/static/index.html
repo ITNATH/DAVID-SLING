@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DAVID SLING — Global Macro Command Center</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Ctext y=%2713%27 font-size=%2713%27%3E%E2%97%86%3C/text%3E%3C/svg%3E">
+<title>DAVID SLING — Global Overview &amp; Execution Command Center</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='13' font-size='13'%3E%E2%97%86%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -13,25 +13,50 @@
 <header id="topbar">
   <div class="brand">
     <span class="logo">◆</span>
-    <span class="brand-name">DAVID&nbsp;SLING</span>
-    <span class="brand-sub">IATOS · Global Macro Trading &amp; Execution Command Center</span>
+    <div class="brand-txt">
+      <span class="brand-name">DAVID&nbsp;SLING</span>
+      <span class="brand-sub">IATOS · Global Overview &amp; Execution Command Center</span>
+    </div>
   </div>
   <div class="top-right">
     <span id="conn" class="pill st-dim"><span class="dot"></span>connecting…</span>
-    <span id="boot" class="pill st-dim">boot …</span>
+    <span id="boot" class="pill st-dim"><span class="dot"></span>boot …</span>
     <span id="session" class="pill st-dim">—</span>
+    <span id="clock" class="pill st-dim mono">--:--:--</span>
     <button id="theme-toggle" class="btn" title="Toggle Light / Dark mode">🌙 Dark</button>
   </div>
 </header>
 
-<!-- ======================= FOUR-QUADRANT GRID ======================= -->
+<!-- ======================= GLOBAL KPI STRIP ======================= -->
+<section id="kpi-strip" class="card">
+  <div id="telemetry" class="metrics"></div>
+  <div class="kpi-side">
+    <div class="meter-row">
+      <span class="dim">Margin risk</span>
+      <div class="meter"><div id="margin-meter" class="meter-fill"></div></div>
+      <span id="margin-label" class="dim">—</span>
+    </div>
+    <div id="ledger" class="ledger-chip mono"></div>
+  </div>
+</section>
+
+<!-- ======================= MAIN COMMAND GRID ======================= -->
 <div id="app-grid">
 
-  <!-- ============ LEFT SIDEBAR — TELEMETRY & INTELLIGENCE ============ -->
+  <!-- ============ LEFT RAIL — MONITORING & INTELLIGENCE ============ -->
   <aside id="rail-left" class="rail">
-    <section class="card" id="card-telemetry">
-      <h3>Account Telemetry</h3>
-      <div id="telemetry" class="metrics"></div>
+    <section class="card" id="card-monitoring">
+      <h3>Monitoring · Learning Engine <span class="prov">LIVE</span></h3>
+      <div class="mon-row">
+        <div class="mon-stat"><span class="k">Dispatch avg</span><span class="v" id="mon-dispatch">—</span></div>
+        <div class="mon-stat"><span class="k">Rescans</span><span class="v" id="mon-rescans">0</span></div>
+        <div class="mon-stat"><span class="k">Risk vetoes</span><span class="v" id="mon-vetoes">0</span></div>
+        <div class="mon-stat"><span class="k">Drift proposals</span><span class="v" id="mon-drift">0</span></div>
+      </div>
+      <table class="mini" id="mon-strategies"><thead>
+        <tr><th>Strategy</th><th>Trades</th><th>Win %</th><th>PnL</th></tr>
+      </thead><tbody></tbody></table>
+      <div id="mon-proposals" class="feed mini-feed"></div>
     </section>
 
     <section class="card" id="card-health">
@@ -40,17 +65,12 @@
     </section>
 
     <section class="card grow" id="card-signals">
-      <h3>Order Flow · Active Signals Feed</h3>
+      <h3>Order Flow · Active Signals</h3>
       <div id="signals" class="feed"></div>
-    </section>
-
-    <section class="card grow" id="card-alerts">
-      <h3>Alerts · Fault Hierarchy</h3>
-      <div id="alerts" class="feed"></div>
     </section>
   </aside>
 
-  <!-- ============ CENTER CANVAS — INTERACTIVE CORE ============ -->
+  <!-- ============ CENTER — GLOBAL MARKET CORE ============ -->
   <main id="rail-center" class="rail">
     <section class="card" id="card-globe">
       <div class="stage-head">
@@ -71,13 +91,11 @@
         <select id="symbol-select"></select>
         <div id="awareness" class="kv"></div>
       </section>
-
       <section class="card" id="card-scenario">
         <h3>Universal Scenario Pool</h3>
         <div id="scenario" class="big-badge">—</div>
         <div id="hypothesis" class="kv"></div>
       </section>
-
       <section class="card" id="card-fusion">
         <h3>9-Layer Fusion Brain</h3>
         <div id="fusion-dir" class="big-badge">—</div>
@@ -91,14 +109,8 @@
     </section>
   </main>
 
-  <!-- ============ RIGHT PANEL — RISK & ASSET MANAGEMENT ============ -->
+  <!-- ============ RIGHT RAIL — EXECUTION & RISK ============ -->
   <aside id="rail-right" class="rail">
-    <section class="card" id="card-control">
-      <h3>🎛 Control Panel — Execution · Engine Controls <span class="dim">(authorized mutations, ledgered)</span></h3>
-      <div id="engine-controls" class="engine-controls"></div>
-      <div class="form-row"><span id="control-result" class="dim">config v1 · mutations recorded in evidence ledger</span></div>
-    </section>
-
     <section class="card" id="card-trade">
       <h3>⚡ Omni-Trade Execution &amp; Basket Panel</h3>
       <div class="tabs">
@@ -106,7 +118,6 @@
         <button class="tab" data-tab="multi">Single-Pair Multi</button>
         <button class="tab" data-tab="basket">Cross-Pair Basket</button>
       </div>
-
       <div class="tabpane" id="tab-single">
         <div class="form-row">
           <label>Symbol <select id="t-symbol"></select></label>
@@ -125,7 +136,6 @@
           <span id="r-multiple" class="dim"></span>
         </div>
       </div>
-
       <div class="tabpane hidden" id="tab-multi">
         <div class="form-row">
           <label>Symbol <select id="m-symbol"></select></label>
@@ -148,7 +158,6 @@
           <button class="btn btn-ok" id="btn-resume">▶ RESUME TRADING</button>
         </div>
       </div>
-
       <div class="tabpane hidden" id="tab-basket">
         <div class="form-row" id="basket-symbols"></div>
         <div class="form-row">
@@ -159,51 +168,79 @@
           <button class="btn btn-buy" id="btn-basket">EXECUTE BASKET</button>
         </div>
       </div>
-      <div id="trade-result" class="dim"></div>
+      <div id="trade-result" class="dim mono"></div>
+    </section>
+
+    <section class="card" id="card-control">
+      <h3>🎛 Control Panel — Engine Controls <span class="dim">(authorized, ledgered)</span></h3>
+      <div id="engine-controls" class="engine-controls"></div>
+      <div class="form-row"><span id="control-result" class="dim">config v1 · mutations recorded in evidence ledger</span></div>
     </section>
 
     <section class="card" id="card-positions">
-      <h3>Open Positions &amp; Cross-Pair PnL Matrix</h3>
+      <h3>Open Positions &amp; Cross-Pair PnL</h3>
       <table id="positions"><thead>
         <tr><th>ID</th><th>Symbol</th><th>Side</th><th>Vol</th><th>Entry</th><th>SL</th><th>TP</th><th>PnL</th><th>BE</th><th></th><th></th></tr>
       </thead><tbody></tbody></table>
       <table id="pnl-matrix"><thead>
-        <tr><th>Symbol</th><th>Gross Profit</th><th>Gross Loss</th><th>Net</th><th>Swap</th><th>Margin</th><th>Positions</th></tr>
+        <tr><th>Symbol</th><th>Gross Profit</th><th>Gross Loss</th><th>Net</th><th>Swap</th><th>Margin</th><th>Pos</th></tr>
       </thead><tbody></tbody></table>
     </section>
 
     <section class="card" id="card-chart">
       <h3>Equity Curve · Capital Deployment</h3>
       <canvas id="equity" width="560" height="160"></canvas>
-      <div class="meter-row">
-        <span class="dim">Margin risk</span>
-        <div class="meter"><div id="margin-meter" class="meter-fill"></div></div>
-        <span id="margin-label" class="dim">—</span>
-      </div>
-    </section>
-
-    <section class="card" id="card-ledger">
-      <h3>Cryptographic Evidence Ledger</h3>
-      <div id="ledger" class="kv"></div>
     </section>
   </aside>
 
-  <!-- ============ BOTTOM CONSOLE — INFRASTRUCTURE & MACRO LOGISTICS ============ -->
-  <footer id="console" class="console">
-    <section class="card console-cell">
-      <h3>Multi-Region Cloud Latency <span class="prov">SIMULATED</span></h3>
-      <div id="latency" class="lat-grid"></div>
-    </section>
-    <section class="card console-cell">
-      <h3>Exchange Connectivity <span class="prov">SIMULATED FEED</span></h3>
-      <div id="venues" class="lat-grid"></div>
-    </section>
-    <section class="card console-cell wide-cell">
-      <h3>Liquidity Pool Depth — <span id="depth-symbol">EURUSD</span> <span class="prov">SIMULATED</span></h3>
+  <!-- ============ BOTTOM CONSOLE — JOURNAL / LOGS / INFRA ============ -->
+  <footer id="console" class="console card">
+    <div class="console-head">
+      <div class="tabs">
+        <button class="tab active" data-ctab="journal">📓 Trade Journal</button>
+        <button class="tab" data-ctab="logs">🖥 System Logs</button>
+        <button class="tab" data-ctab="infra">🌐 Infrastructure</button>
+        <button class="tab" data-ctab="depth">📊 Liquidity Depth</button>
+      </div>
+      <div class="log-filters" id="log-filters">
+        <button class="tab active" data-lv="ALL">ALL</button>
+        <button class="tab" data-lv="INFO">INFO</button>
+        <button class="tab" data-lv="WARNING">WARN</button>
+        <button class="tab" data-lv="CRITICAL">CRIT</button>
+      </div>
+    </div>
+
+    <div class="ctabpane" id="ctab-journal">
+      <table class="mini" id="journal-table"><thead>
+        <tr><th>Time</th><th>Kind</th><th>Symbol</th><th>Side</th><th>Detail</th><th>PnL</th><th>Evidence</th></tr>
+      </thead><tbody id="journal-body"></tbody></table>
+    </div>
+
+    <div class="ctabpane hidden" id="ctab-logs">
+      <div id="logs-body" class="feed log-feed"></div>
+    </div>
+
+    <div class="ctabpane hidden" id="ctab-infra">
+      <div class="infra-grid">
+        <div>
+          <h4>Multi-Region Latency <span class="prov">SIMULATED</span></h4>
+          <div id="latency" class="lat-grid"></div>
+        </div>
+        <div>
+          <h4>Exchange Connectivity <span class="prov">SIMULATED FEED</span></h4>
+          <div id="venues" class="lat-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ctabpane hidden" id="ctab-depth">
+      <h4>Liquidity Pool Depth — <span id="depth-symbol">EURUSD</span> <span class="prov">SIMULATED</span></h4>
       <canvas id="depth"></canvas>
-    </section>
+    </div>
   </footer>
 </div>
+
+<div id="toasts"></div>
 
 <footer id="footbar">DAVID SLING IATOS · pure Python 3.12+ backend · L0–L14 zero-circular architecture · <span id="foot-ts"></span></footer>
 <script src="/static/app.js"></script>

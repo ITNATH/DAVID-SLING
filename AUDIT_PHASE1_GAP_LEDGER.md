@@ -334,3 +334,18 @@ supervisor peer-guard dead `pass` branch removed + `gamma_hft` added to _FORBIDD
 (A +9.25/WR 33.1, B +82.40/34.6, C +35.99/34.6, D +127.36/Sharpe 2.19/WR 36.6). Gates: pytest
 **73/73** · ruff clean · mypy 115 · arch PASS · node --check OK. Live restart: UI 200, engines
 {A,B,C,D,G}, chain VERIFIED, 0 error alerts, feed streaming. No open items.
+
+---
+
+# FIX STATUS — Round 12: Command Center v2 UI (global overview & execution + monitoring/journal/logs + device form factors) (2026-11-04)
+
+`AUDIT_ROUND12_COMMAND_CENTER_V2.md`. UI-only (static files; backend untouched — new sections fed
+by existing read-only APIs /api/monitoring, /api/evidence, /api/alerts). Added: global KPI strip
+with margin-risk meter + ledger chip; Monitoring·Learning Engine panel (dispatch latency, rescans,
+vetoes, drift proposals, per-strategy WR/PnL); tabbed bottom console with **Trade Journal** (journal.*
+evidence rows), **System Logs** (level-filtered alert stream), Infrastructure (latency/venues) and
+Liquidity Depth; Omni-Trade panel is a first-class section of the overview/execution page;
+press-and-hold 2s kept on destructive actions; toasts; 11-color XDR system refined; device form
+factors >=1440 / 1024-1439 / <=1023 / <=640. Verified: node --check OK, 68/68 IDs, gates pytest
+**73/73** · ruff clean · mypy 115 · arch PASS; live UI 200, all polled APIs 200, WS OK (5 engines,
+16 domains, chain verified), trade cycle flat, 60s soak ~204 t/s **0 errors**. No open items.
