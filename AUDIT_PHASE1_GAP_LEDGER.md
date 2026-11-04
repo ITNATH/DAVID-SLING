@@ -299,3 +299,16 @@ Light+Dark themes and all original panels/IDs preserved (58/58), symbols loaded 
 /api/market, simulated data provenance-labelled, zero new backend deps (canvas 2D, no CDN).
 Gates: pytest **73/73** · ruff clean · mypy 115 · arch PASS · node --check OK. Live: UI 200,
 engines {A,B,C,D,G}, chain VERIFIED, alerts error-count 0.
+
+---
+
+# VERIFICATION — Round 10b: full seamless-operation audit (2026-11-04)
+
+Standing order "ensure the entire app is working seamlessly" executed end-to-end: gates
+pytest **73/73** · ruff clean · mypy 115 · arch PASS. Every UI-called route 200
+(/api/health, /api/market{,/sym}, /api/control/engines, /api/alerts, /api/mission-control/*,
+/api/analysis/*, /static/*). Live trade cycle OPEN→FILLED→position→CLOSE→flat via
+/api/trade/*; halt/resume; engine G toggle (config v4→v5); WebSocket /ws/telemetry streams
+overview (16 health domains, engines A/B/C/D/G, chain ok). 180s soak: status ok, ledger chain
+VERIFIED, feed ~204 ticks/s steady, UI 200, **0 error/critical alerts**. One stale UI label fixed
+("15 domains" → live count, now 16 incl. feed_watchdog). No open items.

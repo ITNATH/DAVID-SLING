@@ -151,6 +151,7 @@ function renderTelemetry(a) {
   $("margin-label").style.color = ml >= 300 ? "var(--ok)" : ml >= 150 ? "var(--warn)" : "var(--danger)";
 }
 function renderHealth(h) {
+  $("health-count").textContent = h.length;
   $("health").innerHTML = h.map(x =>
     `<div class="hcell ${x.healthy ? "" : "bad"}"><span class="dot"></span>${x.domain} <span class="dim">${x.layer}</span><span class="st">${x.healthy ? "OK" : "DOWN"}</span></div>`).join("");
 }
