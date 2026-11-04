@@ -359,6 +359,9 @@ class Runtime:
                     try:
                         await self.pipeline.run_symbol(symbol)
                     except Exception as exc:
+                        import traceback as _tb
+                        self.ledger.append("pipeline.error", {"symbol": symbol, "error": str(exc),
+                            "trace": _tb.format_exc(limit=6)})
                         await self.alerts.emit(AlertLevel.WARNING, f"pipeline error {symbol}: {exc}")
             await asyncio.sleep(0.2)
 

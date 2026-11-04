@@ -62,6 +62,8 @@ def macd_hist(closes: list[float]) -> float:
 
 
 def atr(candles: list[Candle], period: int = 14) -> list[float]:
+    if not candles:
+        return []
     trs: list[float] = []
     for i in range(1, len(candles)):
         h, lo, pc = candles[i].high, candles[i].low, candles[i - 1].close
@@ -263,7 +265,8 @@ def compute_features(symbol: str, ts: datetime, price: float, spread_points: flo
     atr_h1 = atr_h1_list[-1] if atr_h1_list else 0.0
     atr_pct_h1 = percentile(atr_h1_list, 50)  # refined below
     if len(atr_h1_list) > 30:
-        atr_pct_h1 = percentile([ (a / closes_h1[i]) * 100 for i, a in enumerate(atr_h1_list, start=1) ][-30:], 50)
+        # atr_h1_list[i] aligns with candles[i] (atr() prepends the first bar's range) -> index closes_h1[i] with start=0
+        atr_pct_h1 = percentile([(a / closes_h1[i]) * 100 for i, a in enumerate(atr_h1_list)][-30:], 50)
 
     e20m1 = ema(closes_m1, 20)
     e50m1 = ema(closes_m1, 50)

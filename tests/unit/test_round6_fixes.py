@@ -171,3 +171,31 @@ def test_G47_calibrated_confidence():
         m.record_outcome("S01", T())
     cal2 = m.calibrated_confidence("S01", 0.6)
     assert cal2 < cal
+
+
+def test_G57_no_index_error_on_short_candle_sets():
+    """Round-9 regression: 'pipeline error: list index out of range' fired once H1 crossed
+    30 bars (atr_pct_h1 off-by-one) and on empty TF lists (atr()). Fuzz degenerate inputs."""
+    import random
+    from datetime import datetime, timedelta
+
+    from david_sling.core.schemas import TF_MINUTES, Candle, Timeframe
+    from david_sling.intelligence.features import atr, compute_features
+
+    assert atr([]) == []
+    rng = random.Random(7)
+    base = datetime(2026, 1, 5, tzinfo=UTC)
+    for _ in range(400):
+        cb = {}
+        for tf in Timeframe:
+            n = rng.choice([0, 1, 2, 3, 5, 10, 31, 35, 60, 120])
+            bars, p = [], 1.1
+            for i in range(n):
+                o = p
+                p *= 1 + rng.uniform(-0.002, 0.002)
+                bars.append(Candle(symbol="EURUSD", tf=tf,
+                                   open_time=base + timedelta(minutes=i * TF_MINUTES[tf]),
+                                   open=o, high=max(o, p) + 1e-5, low=min(o, p) - 1e-5,
+                                   close=p, volume=rng.uniform(1, 100)))
+            cb[tf] = bars
+        compute_features("EURUSD", base, 1.1, 2.0, "LONDON", cb, deltas=[0.1], news_repricing=True)
