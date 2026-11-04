@@ -280,3 +280,22 @@ CLOSED**: gap-through-SL/TP exits at bar open (SL-GAP/TP-GAP). Report regenerate
 pytest **72/72** · ruff clean · mypy 115 · arch PASS. Live: engines {A,B,C,D,G}, G toggle
 versioned 3->4, V75/V25/STEP quotes ask>bid, chain True, ticks 10962, no log errors. All round-9
 gaps closed; ledger has no open items.
+
+---
+
+# FIX STATUS — Round 10: zero-error pipeline fix (G57) + Command Center UI/UX rebuild (2026-11-04)
+
+`AUDIT_ROUND10_COMMAND_CENTER_UI.md`. **G57 CLOSED** — the ALERTS-panel `pipeline error: list
+index out of range` was root-caused to TWO indexing bugs in `intelligence/features.py`:
+(1) `atr_pct_h1` used `enumerate(..., start=1)` against `closes_h1[i]` — off-by-one that fired
+only once H1 exceeded 30 bars (hence all symbols at once, hours after boot); (2) `atr([])`
+crashed on empty TF lists. Both fixed at source; 8,000-trial degenerate-input fuzz now 0 fails
+(was 2,582/6,000); regression test `test_G57_no_index_error_on_short_candle_sets` added;
+pipeline errors now also ledgered with full traceback (`pipeline.error`). UI rebuilt to the
+four-quadrant Global Macro Command Center spec (left telemetry rail / interactive globe-heatmap-
+routes center canvas / right risk & execution rail / bottom infra console), strict 11-color XDR
+palette, glassmorphism, dual-format status indicators, press-and-hold 2s on PANIC/HALT/Close-All,
+Light+Dark themes and all original panels/IDs preserved (58/58), symbols loaded live from
+/api/market, simulated data provenance-labelled, zero new backend deps (canvas 2D, no CDN).
+Gates: pytest **73/73** · ruff clean · mypy 115 · arch PASS · node --check OK. Live: UI 200,
+engines {A,B,C,D,G}, chain VERIFIED, alerts error-count 0.

@@ -3,155 +3,208 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DAVID SLING — Mission Control</title>
+<title>DAVID SLING — Global Macro Command Center</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+
+<!-- ======================= TOP COMMAND BAR ======================= -->
 <header id="topbar">
   <div class="brand">
     <span class="logo">◆</span>
     <span class="brand-name">DAVID&nbsp;SLING</span>
-    <span class="brand-sub">IATOS · Mission Control</span>
+    <span class="brand-sub">IATOS · Global Macro Trading &amp; Execution Command Center</span>
   </div>
   <div class="top-right">
-    <span id="conn" class="pill pill-dim">connecting…</span>
-    <span id="session" class="pill pill-dim">—</span>
+    <span id="conn" class="pill st-dim"><span class="dot"></span>connecting…</span>
+    <span id="boot" class="pill st-dim">boot …</span>
+    <span id="session" class="pill st-dim">—</span>
     <button id="theme-toggle" class="btn" title="Toggle Light / Dark mode">🌙 Dark</button>
   </div>
 </header>
 
-<section id="telemetry" class="cards"></section>
+<!-- ======================= FOUR-QUADRANT GRID ======================= -->
+<div id="app-grid">
 
-<main id="grid">
-  <section class="card" id="card-health">
-    <h3>System Health Matrix <span class="dim">(15 domains)</span></h3>
-    <div id="health" class="health-grid"></div>
-  </section>
+  <!-- ============ LEFT SIDEBAR — TELEMETRY & INTELLIGENCE ============ -->
+  <aside id="rail-left" class="rail">
+    <section class="card" id="card-telemetry">
+      <h3>Account Telemetry</h3>
+      <div id="telemetry" class="metrics"></div>
+    </section>
 
-  <section class="card" id="card-market">
-    <h3>Market Awareness</h3>
-    <select id="symbol-select"></select>
-    <div id="awareness" class="kv"></div>
-  </section>
+    <section class="card" id="card-health">
+      <h3>System Health Matrix <span class="dim">(15 domains)</span></h3>
+      <div id="health" class="health-grid"></div>
+    </section>
 
-  <section class="card" id="card-scenario">
-    <h3>Universal Scenario Pool</h3>
-    <div id="scenario" class="big-badge">—</div>
-    <div id="hypothesis" class="kv"></div>
-  </section>
+    <section class="card grow" id="card-signals">
+      <h3>Order Flow · Active Signals Feed</h3>
+      <div id="signals" class="feed"></div>
+    </section>
 
-  <section class="card" id="card-fusion">
-    <h3>9-Layer Fusion Brain</h3>
-    <div id="fusion-dir" class="big-badge">—</div>
-    <div id="fusion-layers" class="bars"></div>
-  </section>
+    <section class="card grow" id="card-alerts">
+      <h3>Alerts · Fault Hierarchy</h3>
+      <div id="alerts" class="feed"></div>
+    </section>
+  </aside>
 
-  <section class="card" id="card-engines">
-    <h3>Peer Engines</h3>
-    <div id="engines" class="engine-grid"></div>
-  </section>
+  <!-- ============ CENTER CANVAS — INTERACTIVE CORE ============ -->
+  <main id="rail-center" class="rail">
+    <section class="card" id="card-globe">
+      <div class="stage-head">
+        <h3>Global Liquidity &amp; Asset Flow</h3>
+        <div class="mode-switch" role="tablist">
+          <button class="tab active" data-mode="globe">◉ GLOBE</button>
+          <button class="tab" data-mode="heatmap">▦ HEATMAP</button>
+          <button class="tab" data-mode="routes">⑃ ROUTES</button>
+        </div>
+        <span id="globe-hint" class="dim">drag = rotate · wheel = zoom · SIMULATED FEED</span>
+      </div>
+      <canvas id="globe-canvas"></canvas>
+    </section>
 
-  <section class="card wide" id="card-control">
-    <h3>🎛 Control Panel — Execution · Engine Controls <span class="dim">(authorized mutations, ledgered)</span></h3>
-    <div id="engine-controls" class="engine-controls"></div>
-    <div class="form-row"><span id="control-result" class="dim">config v1 · mutations recorded in evidence ledger</span></div>
-  </section>
+    <div class="tri-row">
+      <section class="card" id="card-market">
+        <h3>Market Awareness</h3>
+        <select id="symbol-select"></select>
+        <div id="awareness" class="kv"></div>
+      </section>
 
-  <section class="card" id="card-signals">
-    <h3>Active Signals Feed</h3>
-    <div id="signals" class="feed"></div>
-  </section>
+      <section class="card" id="card-scenario">
+        <h3>Universal Scenario Pool</h3>
+        <div id="scenario" class="big-badge">—</div>
+        <div id="hypothesis" class="kv"></div>
+      </section>
 
-  <section class="card wide" id="card-trade">
-    <h3>⚡ Omni-Trade Execution &amp; Basket Panel</h3>
-    <div class="tabs">
-      <button class="tab active" data-tab="single">Single Trade</button>
-      <button class="tab" data-tab="multi">Single-Pair Multi</button>
-      <button class="tab" data-tab="basket">Cross-Pair Basket</button>
+      <section class="card" id="card-fusion">
+        <h3>9-Layer Fusion Brain</h3>
+        <div id="fusion-dir" class="big-badge">—</div>
+        <div id="fusion-layers" class="bars"></div>
+      </section>
     </div>
 
-    <div class="tabpane" id="tab-single">
-      <div class="form-row">
-        <label>Symbol <select id="t-symbol"></select></label>
-        <label>Side <select id="t-side"><option>BUY</option><option>SELL</option></select></label>
-        <label>Type <select id="t-type"><option>MARKET</option><option>LIMIT</option><option>STOP</option></select></label>
-        <label>Volume (lots) <input id="t-vol" type="number" step="0.01" value="0.10"></label>
-      </div>
-      <div class="form-row">
-        <label>Price (limit/stop) <input id="t-price" type="number" step="any" placeholder="market"></label>
-        <label>Stop Loss <input id="t-sl" type="number" step="any"></label>
-        <label>Take Profit <input id="t-tp" type="number" step="any"></label>
-        <label>Risk % <input id="t-risk" type="number" step="0.1" value="1.0"></label>
-      </div>
-      <div class="form-row">
-        <button class="btn btn-buy" id="btn-open">OPEN TRADE</button>
-        <span id="r-multiple" class="dim"></span>
-      </div>
-    </div>
+    <section class="card" id="card-engines">
+      <h3>Peer Engines</h3>
+      <div id="engines" class="engine-grid"></div>
+    </section>
+  </main>
 
-    <div class="tabpane hidden" id="tab-multi">
-      <div class="form-row">
-        <label>Symbol <select id="m-symbol"></select></label>
-        <label>Side <select id="m-side"><option>BUY</option><option>SELL</option></select></label>
-        <label>Tranches <input id="m-tranches" type="number" value="3" min="1" max="10"></label>
-        <label>Lots/tranche <input id="m-lots" type="number" step="0.01" value="0.05"></label>
+  <!-- ============ RIGHT PANEL — RISK & ASSET MANAGEMENT ============ -->
+  <aside id="rail-right" class="rail">
+    <section class="card" id="card-control">
+      <h3>🎛 Control Panel — Execution · Engine Controls <span class="dim">(authorized mutations, ledgered)</span></h3>
+      <div id="engine-controls" class="engine-controls"></div>
+      <div class="form-row"><span id="control-result" class="dim">config v1 · mutations recorded in evidence ledger</span></div>
+    </section>
+
+    <section class="card" id="card-trade">
+      <h3>⚡ Omni-Trade Execution &amp; Basket Panel</h3>
+      <div class="tabs">
+        <button class="tab active" data-tab="single">Single Trade</button>
+        <button class="tab" data-tab="multi">Single-Pair Multi</button>
+        <button class="tab" data-tab="basket">Cross-Pair Basket</button>
       </div>
-      <div class="form-row">
-        <label>SL <input id="m-sl" type="number" step="any"></label>
-        <label>TP <input id="m-tp" type="number" step="any"></label>
-        <button class="btn btn-buy" id="btn-multi">EXECUTE LADDER</button>
+
+      <div class="tabpane" id="tab-single">
+        <div class="form-row">
+          <label>Symbol <select id="t-symbol"></select></label>
+          <label>Side <select id="t-side"><option>BUY</option><option>SELL</option></select></label>
+          <label>Type <select id="t-type"><option>MARKET</option><option>LIMIT</option><option>STOP</option></select></label>
+          <label>Volume (lots) <input id="t-vol" type="number" step="0.01" value="0.10"></label>
+        </div>
+        <div class="form-row">
+          <label>Price (limit/stop) <input id="t-price" type="number" step="any" placeholder="market"></label>
+          <label>Stop Loss <input id="t-sl" type="number" step="any"></label>
+          <label>Take Profit <input id="t-tp" type="number" step="any"></label>
+          <label>Risk % <input id="t-risk" type="number" step="0.1" value="1.0"></label>
+        </div>
+        <div class="form-row">
+          <button class="btn btn-buy" id="btn-open">OPEN TRADE</button>
+          <span id="r-multiple" class="dim"></span>
+        </div>
       </div>
-      <div class="form-row">
-        <button class="btn btn-sell" data-batch='{"only_losing":true}'>Close Losing</button>
-        <button class="btn" data-batch='{"only_profitable":true}'>Close Profitable</button>
-        <button class="btn" data-batch='{}'>Close All</button>
-        <button class="btn btn-warn" id="btn-be-all">Break-Even All</button>
-        <button class="btn btn-danger" id="btn-panic">🚨 PANIC FLATTEN</button>
-        <button class="btn btn-warning" id="btn-halt">⛔ EMERGENCY HALT</button>
-        <button class="btn btn-ok" id="btn-resume">▶ RESUME TRADING</button>
+
+      <div class="tabpane hidden" id="tab-multi">
+        <div class="form-row">
+          <label>Symbol <select id="m-symbol"></select></label>
+          <label>Side <select id="m-side"><option>BUY</option><option>SELL</option></select></label>
+          <label>Tranches <input id="m-tranches" type="number" value="3" min="1" max="10"></label>
+          <label>Lots/tranche <input id="m-lots" type="number" step="0.01" value="0.05"></label>
+        </div>
+        <div class="form-row">
+          <label>SL <input id="m-sl" type="number" step="any"></label>
+          <label>TP <input id="m-tp" type="number" step="any"></label>
+          <button class="btn btn-buy" id="btn-multi">EXECUTE LADDER</button>
+        </div>
+        <div class="form-row">
+          <button class="btn btn-sell" data-batch='{"only_losing":true}'>Close Losing</button>
+          <button class="btn" data-batch='{"only_profitable":true}'>Close Profitable</button>
+          <button class="btn btn-warn hold" data-batch='{}' data-hold="2000" title="Press &amp; hold 2s">Close All ⏱</button>
+          <button class="btn btn-warn" id="btn-be-all">Break-Even All</button>
+          <button class="btn btn-danger hold" id="btn-panic" data-hold="2000" title="Press &amp; hold 2s">🚨 PANIC FLATTEN ⏱</button>
+          <button class="btn btn-warning hold" id="btn-halt" data-hold="2000" title="Press &amp; hold 2s">⛔ EMERGENCY HALT ⏱</button>
+          <button class="btn btn-ok" id="btn-resume">▶ RESUME TRADING</button>
+        </div>
       </div>
-    </div>
 
-    <div class="tabpane hidden" id="tab-basket">
-      <div class="form-row" id="basket-symbols"></div>
-      <div class="form-row">
-        <label>Side <select id="b-side"><option>BUY</option><option>SELL</option></select></label>
-        <label>Lots each <input id="b-lots" type="number" step="0.01" value="0.05"></label>
-        <label>SL (×ATR) <input id="b-sl" type="number" step="0.1" value="1.5"></label>
-        <label>TP (R) <input id="b-rr" type="number" step="0.1" value="2.0"></label>
-        <button class="btn btn-buy" id="btn-basket">EXECUTE BASKET</button>
+      <div class="tabpane hidden" id="tab-basket">
+        <div class="form-row" id="basket-symbols"></div>
+        <div class="form-row">
+          <label>Side <select id="b-side"><option>BUY</option><option>SELL</option></select></label>
+          <label>Lots each <input id="b-lots" type="number" step="0.01" value="0.05"></label>
+          <label>SL (×ATR) <input id="b-sl" type="number" step="0.1" value="1.5"></label>
+          <label>TP (R) <input id="b-rr" type="number" step="0.1" value="2.0"></label>
+          <button class="btn btn-buy" id="btn-basket">EXECUTE BASKET</button>
+        </div>
       </div>
-    </div>
-    <div id="trade-result" class="dim"></div>
-  </section>
+      <div id="trade-result" class="dim"></div>
+    </section>
 
-  <section class="card wide" id="card-positions">
-    <h3>Open Positions &amp; Cross-Pair PnL Matrix</h3>
-    <table id="positions"><thead>
-      <tr><th>ID</th><th>Symbol</th><th>Side</th><th>Vol</th><th>Entry</th><th>SL</th><th>TP</th><th>PnL</th><th>BE</th><th></th><th></th></tr>
-    </thead><tbody></tbody></table>
-    <table id="pnl-matrix"><thead>
-      <tr><th>Symbol</th><th>Gross Profit</th><th>Gross Loss</th><th>Net</th><th>Swap</th><th>Margin</th><th>Positions</th></tr>
-    </thead><tbody></tbody></table>
-  </section>
+    <section class="card" id="card-positions">
+      <h3>Open Positions &amp; Cross-Pair PnL Matrix</h3>
+      <table id="positions"><thead>
+        <tr><th>ID</th><th>Symbol</th><th>Side</th><th>Vol</th><th>Entry</th><th>SL</th><th>TP</th><th>PnL</th><th>BE</th><th></th><th></th></tr>
+      </thead><tbody></tbody></table>
+      <table id="pnl-matrix"><thead>
+        <tr><th>Symbol</th><th>Gross Profit</th><th>Gross Loss</th><th>Net</th><th>Swap</th><th>Margin</th><th>Positions</th></tr>
+      </thead><tbody></tbody></table>
+    </section>
 
-  <section class="card" id="card-chart">
-    <h3>Equity Curve</h3>
-    <canvas id="equity" width="560" height="160"></canvas>
-  </section>
+    <section class="card" id="card-chart">
+      <h3>Equity Curve · Capital Deployment</h3>
+      <canvas id="equity" width="560" height="160"></canvas>
+      <div class="meter-row">
+        <span class="dim">Margin risk</span>
+        <div class="meter"><div id="margin-meter" class="meter-fill"></div></div>
+        <span id="margin-label" class="dim">—</span>
+      </div>
+    </section>
 
-  <section class="card" id="card-alerts">
-    <h3>Alerts</h3>
-    <div id="alerts" class="feed"></div>
-  </section>
+    <section class="card" id="card-ledger">
+      <h3>Cryptographic Evidence Ledger</h3>
+      <div id="ledger" class="kv"></div>
+    </section>
+  </aside>
 
-  <section class="card" id="card-ledger">
-    <h3>Cryptographic Evidence Ledger</h3>
-    <div id="ledger" class="kv"></div>
-  </section>
-</main>
+  <!-- ============ BOTTOM CONSOLE — INFRASTRUCTURE & MACRO LOGISTICS ============ -->
+  <footer id="console" class="console">
+    <section class="card console-cell">
+      <h3>Multi-Region Cloud Latency <span class="prov">SIMULATED</span></h3>
+      <div id="latency" class="lat-grid"></div>
+    </section>
+    <section class="card console-cell">
+      <h3>Exchange Connectivity <span class="prov">SIMULATED FEED</span></h3>
+      <div id="venues" class="lat-grid"></div>
+    </section>
+    <section class="card console-cell wide-cell">
+      <h3>Liquidity Pool Depth — <span id="depth-symbol">EURUSD</span> <span class="prov">SIMULATED</span></h3>
+      <canvas id="depth"></canvas>
+    </section>
+  </footer>
+</div>
 
-<footer>DAVID SLING IATOS · pure Python 3.12+ · L0–L14 zero-circular architecture · <span id="foot-ts"></span></footer>
+<footer id="footbar">DAVID SLING IATOS · pure Python 3.12+ backend · L0–L14 zero-circular architecture · <span id="foot-ts"></span></footer>
 <script src="/static/app.js"></script>
 </body>
 </html>
