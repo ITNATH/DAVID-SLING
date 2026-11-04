@@ -58,7 +58,7 @@ class EngineToggle(StrictModel):
 
 @router.get("/control/engines")
 async def engine_controls(request: Request):
-    """Control Panel - Execution section: current state of peer engines A/B/C/D."""
+    """Control Panel - Execution section: current state of peer engines A/B/C/D/G."""
     return get_runtime(request).facade.engines_status()
 
 

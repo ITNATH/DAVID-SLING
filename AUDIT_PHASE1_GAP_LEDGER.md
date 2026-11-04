@@ -312,3 +312,25 @@ pytest **73/73** · ruff clean · mypy 115 · arch PASS. Every UI-called route 2
 overview (16 health domains, engines A/B/C/D/G, chain ok). 180s soak: status ok, ledger chain
 VERIFIED, feed ~204 ticks/s steady, UI 200, **0 error/critical alerts**. One stale UI label fixed
 ("15 domains" → live count, now 16 incl. feed_watchdog). No open items.
+
+---
+
+# FIX STATUS — Round 11: full lapse sweep ("fix all lapse", 2026-11-04)
+
+Systematic sweep: gates + placeholder scan + config consistency (54 strategies/9 families,
+engines A/B/C/D/G everywhere, routing/profiles/supervisor aligned) + live error scan + UI
+wiring (58/58 IDs, node --check). Lapses found and FIXED: **G58** report provenance text still
+claimed "Engine Gamma does not exist (gap G33)" after round 9 closed it — generator + report
+regenerated with current wording (G live since round 9; harness row stays labelled PRO-FORMA);
+report §6 lapse list still showed G31/G32/G34/G35 as open — now marked CLOSED with round refs,
+honest open items kept (slippage regime-dependence, portfolio heat model); **G59** harness tapes
+were NOT reproducible — `random.Random((seed,name).__hash__())` is salted per process
+(PYTHONHASHSEED), so every regeneration produced different numbers — replaced with a stable
+SHA-256-derived seed, two consecutive runs now byte-identical; **G60** GAMMA-PF row compounded to
+-4.5e12 on the vol-clustered tape — added a ruin floor (equity >= 0, RUIN outcome), row now
+honestly reads -100% / PF 0.0; stale "A/B/C/D" docstrings (runtime, router, core) -> A/B/C/D/G;
+supervisor peer-guard dead `pass` branch removed + `gamma_hft` added to _FORBIDDEN; favicon added
+(inline SVG data URI, no 404); round-9 audit doc numbers updated to the final deterministic table
+(A +9.25/WR 33.1, B +82.40/34.6, C +35.99/34.6, D +127.36/Sharpe 2.19/WR 36.6). Gates: pytest
+**73/73** · ruff clean · mypy 115 · arch PASS · node --check OK. Live restart: UI 200, engines
+{A,B,C,D,G}, chain VERIFIED, 0 error alerts, feed streaming. No open items.

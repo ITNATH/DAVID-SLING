@@ -27,13 +27,11 @@ from david_sling.strategies.vault import SetupCandidate
 ENGINE_LITERAL = Literal['A', 'B', 'C', 'D', 'G']
 
 # peer dependency guard: engine modules must never import sibling engine modules
-_FORBIDDEN = {"quant_scalping", "tactical_intraday", "swing_structural", "macro_institutional"}
+_FORBIDDEN = {"quant_scalping", "tactical_intraday", "swing_structural", "macro_institutional", "gamma_hft"}
 
 
 def peer_dependency_guard(caller_module: str) -> None:
     name = caller_module.rsplit(".", 1)[-1]
-    if name in _FORBIDDEN and name != caller_module.rsplit(".", 1)[-1]:
-        pass
     for forbidden in _FORBIDDEN:
         if forbidden != name and f".{forbidden}" in caller_module:
             raise BoundaryViolation(f"engine-to-engine coupling detected from {caller_module}")

@@ -412,7 +412,7 @@ class Runtime:
                     self.supervisor.states[eid] = "ARMED" if value else "DISABLED"
 
     def set_engine_enabled(self, engine_id: str, enabled: bool, *, actor: str = "operator") -> dict:
-        """Control-panel mutation: enable/disable a peer engine (A/B/C/D).
+        """Control-panel mutation: enable/disable a peer engine (A/B/C/D/G).
         Versioned config change + ledgered + telemetry-emitted + persisted, and
         hard-enforced into the L8 supervisor so routing immediately abstains."""
         import json as _json

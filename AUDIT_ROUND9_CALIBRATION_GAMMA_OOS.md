@@ -40,10 +40,12 @@ regressions. All data SIMULATED (provenance: synthetic tape, rf 4%, net 0.5pt sl
 - **G48 walk-forward/OOS**: `fold_metrics()` computes per-5-year-fold (1998–2005 … 2021–2026)
   return/MDD/WR/ExpR per engine; report gains `## 8. Walk-Forward / OOS Folds` (folds from 2016 =
   OOS relative to the first half of the tape).
-- `PERFORMANCE_EVALUATION_REPORT.md` regenerated (~2 min) with all three effects; engine table now:
-  A +?, B, C (+252.19% / MDD 11.12 / Sharpe 2.12 / WR 39.2), D (+182.27% / MDD 38.25 / WR 38.3);
-  GAMMA-PF pro-forma remains WR 0.4% (the honest reason Gamma ships DISABLED-by-default tier-2
-  until its own calibration window matures — calibration now active via G47).
+- `PERFORMANCE_EVALUATION_REPORT.md` regenerated (~2 min) with all three effects; engine table (final, deterministic after the round-10 seed-stability fix — see round-10 audit):
+  A (+9.25% / MDD 24.11 / WR 33.1), B (+82.40% / MDD 14.15 / WR 34.6),
+  C (+35.99% / MDD 16.91 / WR 34.6), D (+127.36% / MDD 24.04 / Sharpe 2.19 / WR 36.6);
+  GAMMA-PF pro-forma goes to honest RUIN (-100%, PF 0.0) under the round-9 vol-clustered tape with
+  the round-10 ruin floor — the honest reason Gamma ships as a conservative tier-2 profile
+  (min_conv 0.40, max_tier 2) until its own calibration window (G47) proves out on the live feed.
 
 ## Gates (round-9 final)
 

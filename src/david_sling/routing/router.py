@@ -1,4 +1,4 @@
-"""L7 routing/router - routes a validated setup to Engines A/B/C/D or NO_ROUTE.
+"""L7 routing/router - routes a validated setup to Engines A/B/C/D/G or NO_ROUTE.
 
 Eligibility comes from config/routing.yaml scenario_engine_matrix intersected
 with the strategy's engine affinity; the router then asks each peer engine to
