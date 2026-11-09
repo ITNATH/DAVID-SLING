@@ -19,9 +19,19 @@ class ConfigChange(StrictModel):
 @router.get("/health")
 async def health(request: Request):
     rt = get_runtime(request)
+    ps = rt.facade.protection_status()
     return {"status": "ok", "brand": "DAVID SLING", "version": __version__,
             "mode": rt.mode, "feed_ticks": rt.sim.tick_count if rt.sim else 0,
-            "ledger_chain_ok": rt.ledger.verify_chain()}
+            "ledger_chain_ok": rt.ledger.verify_chain(),
+            "broker": ps["broker"], "halted": ps["halted"]}
+
+
+@router.get("/protection_status")
+async def protection_status(request: Request):
+    """Live status of the four in-layout protection indicators (News Filter,
+    Breakeven, Spike Defence, Thesis Failure) plus halt flag and broker link."""
+    rt = get_runtime(request)
+    return rt.facade.protection_status()
 
 
 @router.get("/system")

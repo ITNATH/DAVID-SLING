@@ -305,3 +305,17 @@ th { color: var(--dim); font-weight: 600; font-size: 9px; text-transform: upperc
   .top-right .pill:not(#conn) { display: none; }
   #topbar { padding: 0 10px; }
 }
+
+/* ===== surgical addition: protection status indicators (in-layout, monitoring card) ===== */
+.prot-head { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; margin: 8px 0 4px; }
+.prot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.prot { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-ctl); padding: 3px 7px; min-width: 0; }
+.prot .k { font-size: 8.5px; text-transform: uppercase; color: var(--dim); letter-spacing: .05em; }
+.prot .v { font-family: var(--mono); font-size: 10.5px; color: var(--c3); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.prot .v.pos { color: var(--ok); }
+.prot .v.neg { color: var(--danger); }
+.prot .v.dim { color: var(--dim); }
+body.halted #topbar { box-shadow: inset 0 -2px 0 var(--danger); }
+body.halted #foot-broker::after { content: " · ⛔ HALTED"; color: var(--danger); }

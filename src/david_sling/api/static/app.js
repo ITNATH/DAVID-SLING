@@ -165,6 +165,51 @@ holdToConfirm($("btn-halt"), 2000, () => {
   api("/api/trade/halt", { reason }).then(r => showTradeResult(r, "⛔ "));
 });
 $("btn-resume").addEventListener("click", () => api("/api/trade/resume", {}).then(r => showTradeResult(r, "▶ ")));
+/* same operations available from the basket module via data-action (no duplicate ids) */
+document.querySelectorAll("[data-action]").forEach(b => {
+  const fire = async () => {
+    const act = b.dataset.action;
+    if (act === "be-all") showTradeResult(await api("/api/trade/breakeven-all"));
+    else if (act === "panic") showTradeResult(await api("/api/trade/panic-flatten", {}), "🚨 ");
+    else if (act === "halt") {
+      const reason = prompt("Emergency halt reason:", "operator emergency halt");
+      if (reason === null) return;
+      showTradeResult(await api("/api/trade/halt", { reason }), "⛔ ");
+    } else if (act === "resume") showTradeResult(await api("/api/trade/resume", {}), "▶ ");
+  };
+  if (b.classList.contains("hold")) holdToConfirm(b, parseInt(b.dataset.hold || "2000"), fire);
+  else b.addEventListener("click", fire);
+});
+
+/* ---------------- PROTECTIONS — live status indicators (News Filter / Breakeven /
+   Spike Defence / Thesis Failure) + halt flag + broker link, polled read-only API ---------------- */
+async function loadProtections() {
+  try {
+    const d = await api("/api/protection_status");
+    const n = d.news_filter || {};
+    const newsEl = $("prot-news");
+    newsEl.textContent = n.active ? `ACTIVE · ${Math.ceil(n.seconds_left ?? 0)}s left` : "INACTIVE";
+    newsEl.className = "v " + (n.active ? "neg" : "dim");
+    const be = d.breakeven || {};
+    const beEl = $("prot-be");
+    beEl.textContent = `trigger +${be.trigger_atr_mult ?? 1.5} ATR · armed ${be.positions_armed ?? 0}`;
+    beEl.className = "v " + ((be.positions_armed ?? 0) > 0 ? "pos" : "dim");
+    const sp = d.spike_defence || {};
+    const armed = Object.values(sp.per_symbol || {}).filter(x => x.armed).length;
+    const spEl = $("prot-spike");
+    spEl.textContent = `ATR ×${sp.atr_spike_mult ?? 3} · spread ×${sp.spread_widen_mult ?? 4} · ${armed} armed`;
+    spEl.className = "v " + (armed ? "neg" : "dim");
+    const th = d.thesis_failure || {};
+    const thEl = $("prot-thesis");
+    thEl.textContent = `invalidations ${th.invalidations_total ?? 0}` + (th.last && th.last.symbol ? ` · last ${th.last.symbol}` : "");
+    thEl.className = "v " + ((th.invalidations_total ?? 0) > 0 ? "neg" : "dim");
+    const br = d.broker || {};
+    const live = br.type === "Mt5Adapter" && br.connected;
+    $("foot-broker").textContent = live ? "MT5 LIVE" : (br.type === "Mt5Adapter" ? "MT5 DOWN" : "SIM");
+    $("foot-broker").style.color = live ? "var(--ok)" : br.type === "Mt5Adapter" ? "var(--danger)" : "var(--warn)";
+    document.body.classList.toggle("halted", !!d.halted);
+  } catch (e) { /* next poll retries */ }
+}
 
 /* ---------------- rendering: overview ---------------- */
 function renderTelemetry(a) {
@@ -639,10 +684,18 @@ api("/api/health").then(h => {
   const b = $("boot");
   if (h.status === "ok") { b.innerHTML = '<span class="dot"></span>boot OK'; b.className = "pill st-ok"; }
   else { b.innerHTML = '<span class="dot"></span>boot FAIL'; b.className = "pill st-crit"; }
+  if (h.broker) {
+    const live = h.broker.type === "Mt5Adapter" && h.broker.connected;
+    const fb = $("foot-broker");
+    if (fb) { fb.textContent = live ? "MT5 LIVE" : (h.broker.type === "Mt5Adapter" ? "MT5 DOWN" : "SIM");
+      fb.style.color = live ? "var(--ok)" : h.broker.type === "Mt5Adapter" ? "var(--danger)" : "var(--warn)"; }
+  }
 });
 loadEngineControls();
 loadMonitoring();
 loadJournal();
+loadProtections();
 setInterval(loadMonitoring, 2500);
 setInterval(loadJournal, 3000);
+setInterval(loadProtections, 2500);
 connect();

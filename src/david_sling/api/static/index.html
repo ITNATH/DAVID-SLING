@@ -57,6 +57,13 @@
         <tr><th>Strategy</th><th>Trades</th><th>Win %</th><th>PnL</th></tr>
       </thead><tbody></tbody></table>
       <div id="mon-proposals" class="feed mini-feed"></div>
+      <div class="prot-head dim">Protections · Status Indicators</div>
+      <div id="protections" class="prot-grid">
+        <div class="prot"><span class="k">News Filter</span><span class="v" id="prot-news">—</span></div>
+        <div class="prot"><span class="k">Breakeven</span><span class="v" id="prot-be">—</span></div>
+        <div class="prot"><span class="k">Spike Defence</span><span class="v" id="prot-spike">—</span></div>
+        <div class="prot"><span class="k">Thesis Failure</span><span class="v" id="prot-thesis">—</span></div>
+      </div>
     </section>
 
     <section class="card" id="card-health">
@@ -167,6 +174,15 @@
           <label>TP (R) <input id="b-rr" type="number" step="0.1" value="2.0"></label>
           <button class="btn btn-buy" id="btn-basket">EXECUTE BASKET</button>
         </div>
+        <div class="form-row">
+          <button class="btn btn-sell" data-batch='{"only_losing":true}'>Close Losing</button>
+          <button class="btn" data-batch='{"only_profitable":true}'>Close Profitable</button>
+          <button class="btn btn-warn hold" data-batch='{}' data-hold="2000" title="Press &amp; hold 2s">Close All ⏱</button>
+          <button class="btn btn-warn" data-action="be-all">Break-Even All</button>
+          <button class="btn btn-danger hold" data-action="panic" data-hold="2000" title="Press &amp; hold 2s">🚨 PANIC FLATTEN ⏱</button>
+          <button class="btn btn-warning hold" data-action="halt" data-hold="2000" title="Press &amp; hold 2s">⛔ EMERGENCY HALT ⏱</button>
+          <button class="btn btn-ok" data-action="resume">▶ RESUME TRADING</button>
+        </div>
       </div>
       <div id="trade-result" class="dim mono"></div>
     </section>
@@ -242,7 +258,7 @@
 
 <div id="toasts"></div>
 
-<footer id="footbar">DAVID SLING IATOS · pure Python 3.12+ backend · L0–L14 zero-circular architecture · <span id="foot-ts"></span></footer>
+<footer id="footbar">DAVID SLING IATOS · pure Python 3.12+ backend · L0–L14 zero-circular architecture · feed <span id="foot-broker" class="mono">SIM</span> · <span id="foot-ts"></span></footer>
 <script src="/static/app.js"></script>
 </body>
 </html>
