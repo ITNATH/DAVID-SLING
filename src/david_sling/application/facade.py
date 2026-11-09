@@ -54,6 +54,41 @@ class ServiceFacade:
     def monitoring(self) -> dict:
         return dict(self.rt.monitoring.summary())
 
+    def protection_status(self) -> dict:
+        """Read-only status for the desktop protection indicators (news filter,
+        breakeven trigger, spike defence, thesis failure, halt, broker link)."""
+        rt = self.rt
+        from david_sling.position_management.tms import BREAKEVEN_ATR_MULT
+
+        news_until = getattr(rt, "_news_until", None)
+        news_left = None
+        if rt.news_active and news_until is not None:
+            news_left = max(0.0, (news_until - rt.clock_now()).total_seconds())
+        spike = {}
+        for sym in rt.symbols.symbols():
+            now = rt.spread_now(sym)
+            avg = rt.spread_avg(sym)
+            spike[sym] = {"spread_now": now, "spread_avg": avg,
+                          "widen_ratio": round(now / avg, 2) if avg > 0 else None,
+                          "armed": bool(avg > 0 and now > rt.risk.spread_widen_mult * avg)}
+        invalidations = rt.ledger.by_kind("hypothesis.invalidated")
+        broker = rt.broker
+        return {
+            "news_filter": {"active": rt.news_active, "seconds_left": news_left},
+            "breakeven": {"trigger_atr_mult": BREAKEVEN_ATR_MULT,
+                         "positions_armed": sum(1 for p in rt.broker.account.positions.values()
+                                                if not p.breakeven_done)},
+            "spike_defence": {"atr_spike_mult": rt.risk.atr_spike_mult,
+                              "spread_widen_mult": rt.risk.spread_widen_mult,
+                              "per_symbol": spike},
+            "thesis_failure": {"invalidations_total": len(invalidations),
+                               "last": invalidations[-1].payload if invalidations else None},
+            "halted": rt.risk.state.halted,
+            "broker": {"type": type(broker).__name__,
+                       "connected": bool(getattr(broker, "is_connected", True)),
+                       "mode": rt.mode},
+        }
+
     def health(self) -> list[dict]:
         return list(self.rt.mission_control.health_matrix())
 

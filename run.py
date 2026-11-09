@@ -7,6 +7,7 @@ Modes:
     scan       run the initial bot-on / pre-market scan and print a report
     backtest   deterministic replay over generated historical data, prints results
     diag       boot diagnostics (architecture audit, config, ledger continuity)
+    gui        PySide6 desktop command center (Milestone B, QSS, MT5-ready)
 """
 from __future__ import annotations
 
@@ -15,9 +16,15 @@ import asyncio
 import sys
 
 
+def _gui(args) -> int:
+    import desktop
+
+    return desktop.launch("sim" if args.sim or args.mode == "gui" else "live")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="run.py", description="DAVID SLING launcher")
-    parser.add_argument("mode", choices=["live", "sim", "api", "scan", "backtest", "diag"])
+    parser.add_argument("mode", choices=["live", "sim", "api", "scan", "backtest", "diag", "gui"])
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--days", type=int, default=30, help="backtest length in days")
@@ -26,6 +33,8 @@ def main() -> int:
 
     from src.david_sling.bootstrap.david_os_boot import DavidOSBoot
 
+    if args.mode == "gui":
+        return _gui(args)
     if args.mode in {"live", "sim", "api"}:
         mode = "sim" if (args.mode == "sim" or args.sim) else ("sim" if args.mode == "api" else "live")
         from src.david_sling.api.app import serve
