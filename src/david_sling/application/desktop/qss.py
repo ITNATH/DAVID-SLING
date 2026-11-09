@@ -2,7 +2,7 @@
 
 Mirrors the web command center's strict 11-color XDR palette:
 c0 bg . c1 surface . c2 card . c3 text . c4 dim . c5 cyan(ok/buy)
-c6 amber(warn) . c7 crimson(threat/sell) . c8 white . c9 hairline . c10 well
+c6 amber(warn) . c7 crimson(threat/sell) . c8 white . c9 hairline . c10 well . c11 green(ok/verified)
 Dark is the default (XDR midnight); `stylesheet("light")` returns the mirrored
 light theme. Pure QSS embedded in Python - zero external CSS.
 """
@@ -10,11 +10,11 @@ from __future__ import annotations
 
 DARK = {
     "c0": "#000000", "c1": "#0A0A0C", "c2": "#12141B", "c3": "#E8EAF0", "c4": "#7A8090",
-    "c5": "#00F0FF", "c6": "#FFB800", "c7": "#FF2D55", "c8": "#FFFFFF", "c9": "#1E222B", "c10": "#2A2F3A",
+    "c5": "#00F0FF", "c6": "#FFB800", "c7": "#FF2D55", "c8": "#FFFFFF", "c9": "#1E222B", "c10": "#2A2F3A", "c11": "#3FB950",
 }
 LIGHT = {
     "c0": "#FFFFFF", "c1": "#F4F6F8", "c2": "#FFFFFF", "c3": "#101828", "c4": "#667085",
-    "c5": "#0E7490", "c6": "#B45309", "c7": "#E11D48", "c8": "#101828", "c9": "#E4E7EC", "c10": "#EEF1F4",
+    "c5": "#0E7490", "c6": "#B45309", "c7": "#E11D48", "c8": "#101828", "c9": "#E4E7EC", "c10": "#EEF1F4", "c11": "#15803D",
 }
 
 
@@ -39,6 +39,8 @@ QLabel.brandName {{ font-family: {mono}; font-weight: 800; font-size: 16px; lett
 QLabel.brandSub {{ color: {c['c4']}; font-size: 10px; }}
 QLabel.logo {{ color: {c['c5']}; font-size: 20px; }}
 QLabel.kpiK {{ color: {c['c4']}; font-size: 9px; text-transform: uppercase; }}
+QLabel.miniK {{ color: {c['c4']}; font-size: 7.5px; text-transform: uppercase; }}
+QLabel.miniV {{ font-family: {mono}; font-size: 13px; font-weight: 700; }}
 QLabel.kpiV {{ font-family: {mono}; font-size: 17px; font-weight: 700; }}
 QLabel.pos {{ color: {c['c5']}; }} QLabel.neg {{ color: {c['c7']}; }}
 QLabel.bigBadge {{ font-family: {mono}; font-size: 18px; font-weight: 800; }}
@@ -49,6 +51,8 @@ QLabel.pillWarn {{ color: {c['c6']}; border-color: {c['c6']}; }}
 QLabel.pillCrit {{ color: {c['c7']}; border-color: {c['c7']}; }}
 QLabel.prov {{ color: {c['c6']}; border: 1px solid {c['c6']}; border-radius: 4px; padding: 0 5px;
   font-family: {mono}; font-size: 8.5px; }}
+QLabel.ledgerChip {{ color: {c['c11']}; border: 1px solid {c['c11']}; border-radius: 6px;
+  padding: 2px 8px; font-family: {mono}; font-size: 9.5px; background: rgba(63,185,80,0.08); }}
 QLabel.hcell {{ background: {c['c1']}; border: 1px solid {c['c9']}; border-radius: 6px;
   padding: 3px 7px; font-family: {mono}; font-size: 10px; }}
 QPushButton {{ background: {c['c2']}; color: {c['c3']}; border: 1px solid {c['c9']};
@@ -57,19 +61,21 @@ QPushButton:hover {{ border-color: {c['c5']}; }}
 QPushButton:pressed {{ background: {c['c10']}; }}
 QPushButton:focus {{ outline: 2px solid {c['c5']}; }}
 QPushButton.btnBuy {{ background: {c['c5']}; color: {c['c0']}; font-weight: 700; border: none; }}
+QPushButton.btnSm {{ padding: 5px 6px; font-size: 9.5px; margin-right: 0px; border-radius: 6px; }}
 QPushButton.btnSell {{ background: {c['c7']}; color: {c['c8']}; font-weight: 700; border: none; }}
 QPushButton.btnWarn {{ background: {c['c6']}; color: {c['c0']}; font-weight: 700; border: none; }}
 QPushButton.btnDanger {{ background: {c['c7']}; color: {c['c8']}; font-weight: 800; border: none; }}
 QPushButton.btnOk {{ background: {c['c5']}; color: {c['c0']}; font-weight: 700; border: none; }}
 QPushButton.hold {{ }}
 QPushButton:disabled {{ color: {c['c4']}; border-color: {c['c9']}; }}
+QCheckBox {{ font-size: 9.5px; font-family: {mono}; spacing: 3px; }}
 QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {{ background: {c['c10']}; border: 1px solid {c['c9']};
   border-radius: 6px; padding: 5px 8px; font-size: 12px; selection-background-color: {c['c5']}; }}
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {{ border-color: {c['c5']}; }}
 QComboBox QAbstractItemView {{ background: {c['c2']}; border: 1px solid {c['c9']}; }}
 QTabWidget::pane {{ border: 1px solid {c['c9']}; border-radius: 8px; background: {c['c2']}; }}
 QTabBar::tab {{ background: {c['c1']}; color: {c['c4']}; border: 1px solid {c['c9']};
-  border-radius: 6px; padding: 5px 11px; margin-right: 4px; font-family: {mono}; font-size: 10.5px; }}
+  border-radius: 6px; padding: 4px 5px; margin-right: 3px; font-family: {mono}; font-size: 9px; min-width: 0px; }}
 QTabBar::tab:selected {{ color: {c['c3']}; border-color: {c['c5']}; font-weight: 700; }}
 QTableWidget {{ background: {c['c1']}; border: 1px solid {c['c9']}; border-radius: 8px;
   gridline-color: {c['c9']}; font-size: 10.5px; }}
@@ -87,6 +93,8 @@ QCheckBox {{ spacing: 6px; }}
 QCheckBox::indicator {{ width: 40px; height: 22px; border-radius: 11px; background: {c['c7']}; }}
 QCheckBox::indicator:checked {{ background: {c['c5']}; }}
 QCheckBox::indicator::handle {{ }}
+QCheckBox.chkSm {{ font-size: 9px; spacing: 3px; }}
+QCheckBox.chkSm::indicator {{ width: 24px; height: 13px; border-radius: 7px; }}
 QScrollArea {{ border: none; background: transparent; }}
 QScrollBar:vertical {{ background: transparent; width: 8px; }}
 QScrollBar::handle:vertical {{ background: {c['c10']}; border-radius: 4px; min-height: 20px; }}

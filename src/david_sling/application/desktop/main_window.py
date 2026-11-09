@@ -211,7 +211,7 @@ class MainWindow(QMainWindow):
         mr.addWidget(self.margin_lbl)
         side.addLayout(mr)
         self.ledger_lbl = QLabel("ledger —")
-        self.ledger_lbl.setProperty("class", "mono dim")
+        self.ledger_lbl.setProperty("class", "ledgerChip")
         side.addWidget(self.ledger_lbl)
         lay.addLayout(side)
         return strip
@@ -233,7 +233,7 @@ class MainWindow(QMainWindow):
         grid.setStretchFactor(2, 0)
         for i, wdt in enumerate((290, 0, 380)):
             grid.setStretchFactor(i, 1 if wdt == 0 else 0)
-        grid.setSizes([290, 700, 380])
+        grid.setSizes([280, 660, 360])
         return grid
 
     def _rail_scroll(self, content: QWidget) -> QScrollArea:
@@ -254,14 +254,16 @@ class MainWindow(QMainWindow):
         self.mon_stats = {}
         for i, k in enumerate(["Dispatch avg", "Rescans", "Risk vetoes", "Drift proposals"]):
             kk = QLabel(k)
-            kk.setProperty("class", "kpiK")
+            kk.setProperty("class", "miniK")
             vv = QLabel("—")
-            vv.setProperty("class", "kpiV mono")
+            vv.setProperty("class", "miniV mono")
             stats.addWidget(kk, 0, i)
             stats.addWidget(vv, 1, i)
             self.mon_stats[k] = vv
         mv.addLayout(stats)
         self.mon_table = QTableWidget(0, 4)
+        self.mon_table.verticalHeader().setVisible(False)
+        self.mon_table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.mon_table.setHorizontalHeaderLabels(["Strategy", "Trades", "Win %", "PnL"])
         self.mon_table.horizontalHeader().setStretchLastSection(True)
         mv.addWidget(self.mon_table)
@@ -276,9 +278,10 @@ class MainWindow(QMainWindow):
             row = QHBoxLayout()
             kk = QLabel(k)
             kk.setProperty("class", "dim")
-            kk.setFixedWidth(110)
+            kk.setFixedWidth(96)
             vv = QLabel("—")
             vv.setProperty("class", "mono")
+            vv.setWordWrap(True)
             row.addWidget(kk)
             row.addWidget(vv, 1)
             pv.addLayout(row)
@@ -379,6 +382,9 @@ class MainWindow(QMainWindow):
 
         trade_card, tv = self._card("⚡ Omni-Trade Execution & Basket Panel")
         self.trade_tabs = QTabWidget()
+        self.trade_tabs.setMinimumWidth(0)
+        self.trade_tabs.tabBar().setExpanding(False)
+        self.trade_tabs.setUsesScrollButtons(True)
         tv.addWidget(self.trade_tabs)
         self.trade_tabs.addTab(self._build_single_tab(), "Single Trade")
         self.trade_tabs.addTab(self._build_multi_tab(), "Single-Pair Multi")
@@ -387,7 +393,7 @@ class MainWindow(QMainWindow):
         self.trade_result.setProperty("class", "dim mono")
         self.trade_result.setWordWrap(True)
         tv.addWidget(self.trade_result)
-        lay.addWidget(trade_card)
+        lay.addWidget(trade_card, 1)
 
         ctl_card, cv = self._card("🎛 Control Panel — Engine Controls (authorized, ledgered)")
         self.engine_rows: dict[str, QCheckBox] = {}
@@ -400,10 +406,14 @@ class MainWindow(QMainWindow):
 
         pos_card, pv = self._card("Open Positions & Cross-Pair PnL")
         self.pos_table = QTableWidget(0, 11)
+        self.pos_table.verticalHeader().setVisible(False)
+        self.pos_table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.pos_table.setHorizontalHeaderLabels(
             ["ID", "Symbol", "Side", "Vol", "Entry", "SL", "TP", "PnL", "BE", "", ""])
         pv.addWidget(self.pos_table)
         self.pnl_table = QTableWidget(0, 7)
+        self.pnl_table.verticalHeader().setVisible(False)
+        self.pnl_table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.pnl_table.setHorizontalHeaderLabels(
             ["Symbol", "Gross Profit", "Gross Loss", "Net", "Swap", "Margin", "Pos"])
         pv.addWidget(self.pnl_table)
@@ -413,7 +423,6 @@ class MainWindow(QMainWindow):
         self.equity = EquityWidget()
         qv.addWidget(self.equity, 1)
         lay.addWidget(eq_card)
-        lay.addStretch(1)
         return w
 
     def _lbl(self, text: str = "") -> QLabel:
@@ -421,83 +430,93 @@ class MainWindow(QMainWindow):
         lbl.setProperty("class", "dim")
         return lbl
 
+    def _field(self, lay: QVBoxLayout, lbl: str, ctl: QWidget) -> None:
+        box = QVBoxLayout()
+        box.setSpacing(2)
+        box.addWidget(self._lbl(lbl))
+        box.addWidget(ctl)
+        lay.addLayout(box)
+
     def _build_single_tab(self) -> QWidget:
         w = QWidget()
         lay = QVBoxLayout(w)
+        lay.setSpacing(6)
         r1 = QHBoxLayout()
         self.t_symbol = QComboBox()
         self.t_side = QComboBox()
         self.t_side.addItems(["BUY", "SELL"])
         self.t_type = QComboBox()
         self.t_type.addItems(["MARKET", "LIMIT", "STOP"])
+        for lbl, ctl in [("Symbol", self.t_symbol), ("Side", self.t_side), ("Type", self.t_type)]:
+            self._field(r1, lbl, ctl)  # type: ignore[arg-type]
+        lay.addLayout(r1)
         self.t_vol = QDoubleSpinBox()
         self.t_vol.setRange(0.01, 100.0)
         self.t_vol.setSingleStep(0.01)
         self.t_vol.setValue(0.10)
-        for lbl, ctl in [("Symbol", self.t_symbol), ("Side", self.t_side), ("Type", self.t_type), ("Volume (lots)", self.t_vol)]:
-            box = QVBoxLayout()
-            box.addWidget(self._lbl(lbl))
-            box.addWidget(ctl)
-            r1.addLayout(box)
-        lay.addLayout(r1)
-        r2 = QHBoxLayout()
+        self._field(lay, "Volume (lots)", self.t_vol)
         self.t_price = QLineEdit()
         self.t_price.setPlaceholderText("market")
+        self._field(lay, "Price (limit/stop)", self.t_price)
         self.t_sl = QLineEdit()
+        self._field(lay, "Stop Loss", self.t_sl)
         self.t_tp = QLineEdit()
+        self._field(lay, "Take Profit", self.t_tp)
         self.t_risk = QDoubleSpinBox()
         self.t_risk.setRange(0.1, 10.0)
         self.t_risk.setValue(1.0)
-        for lbl, ctl in [("Price (limit/stop)", self.t_price), ("Stop Loss", self.t_sl),
-                         ("Take Profit", self.t_tp), ("Risk %", self.t_risk)]:
-            box = QVBoxLayout()
-            box.addWidget(self._lbl(lbl))
-            box.addWidget(ctl)
-            r2.addLayout(box)
-        lay.addLayout(r2)
-        r3 = QHBoxLayout()
+        self._field(lay, "Risk %", self.t_risk)
         self.btn_open = QPushButton("OPEN TRADE")
         self.btn_open.setProperty("class", "btnBuy")
         self.btn_open.clicked.connect(self._cmd_open)
-        r3.addWidget(self.btn_open)
+        lay.addWidget(self.btn_open)
         self.r_multiple = QLabel("")
         self.r_multiple.setProperty("class", "dim")
-        r3.addWidget(self.r_multiple)
-        r3.addStretch(1)
+        lay.addWidget(self.r_multiple)
+        r3 = QHBoxLayout()
+        self._batch_buttons(r3, True)
         lay.addLayout(r3)
+        r4 = QHBoxLayout()
+        self._override_buttons(r4)
+        lay.addLayout(r4)
         for f in (self.t_price, self.t_sl, self.t_tp):
             f.textChanged.connect(self._update_r)
         lay.addStretch(1)
         return w
 
     def _batch_buttons(self, lay: QHBoxLayout, scope_symbol: bool) -> None:
-        """The 4 batch buttons, identical in BOTH operational modules (multi + basket)."""
-        def add(btn: QPushButton) -> None:
-            lay.addWidget(btn)
+        """The 4 batch buttons in a 2x2 grid, identical in BOTH operational modules
+        (multi + basket) and the single tab - compact so the rail never overflows."""
+        grid = QGridLayout()
         b1 = QPushButton("Close Losing")
-        b1.setProperty("class", "btnSell")
+        b1.setProperty("class", "btnSell btnSm")
         b1.clicked.connect(lambda: self._cmd_batch({"only_losing": True}))
         b2 = QPushButton("Close Profitable")
+        b2.setProperty("class", "btnSm")
         b2.clicked.connect(lambda: self._cmd_batch({"only_profitable": True}))
         b3 = HoldButton("Close All ⏱")
-        b3.setProperty("class", "btnWarn")
+        b3.setProperty("class", "btnWarn btnSm")
         b3.on_held(lambda: self._cmd_batch({}))
         b4 = QPushButton("Break-Even All")
-        b4.setProperty("class", "btnWarn")
+        b4.setProperty("class", "btnWarn btnSm")
         b4.clicked.connect(lambda: self.worker.enqueue("breakeven_all", self.facade.breakeven_all))
-        for b in (b1, b2, b3, b4):
-            add(b)
+        for i, b in enumerate((b1, b2, b3, b4)):
+            grid.addWidget(b, i // 2, i % 2)
+        lay.addLayout(grid)
         return None
 
     def _override_buttons(self, lay: QHBoxLayout) -> None:
-        self.btn_panic = HoldButton("🚨 PANIC FLATTEN ⏱")
-        self.btn_panic.setProperty("class", "btnDanger")
+        self.btn_panic = HoldButton("🚨 PANIC ⏱")
+        self.btn_panic.setProperty("class", "btnDanger btnSm")
+        self.btn_panic.setToolTip("PANIC FLATTEN — hold 2s: close all + cancel pending")
         self.btn_panic.on_held(self.worker.panic)
-        self.btn_halt = HoldButton("⛔ EMERGENCY HALT ⏱")
-        self.btn_halt.setProperty("class", "btnWarn")
+        self.btn_halt = HoldButton("⛔ HALT ⏱")
+        self.btn_halt.setProperty("class", "btnWarn btnSm")
+        self.btn_halt.setToolTip("EMERGENCY HALT — hold 2s: freeze automated cycles")
         self.btn_halt.on_held(self._cmd_halt)
-        self.btn_resume = QPushButton("▶ RESUME TRADING")
-        self.btn_resume.setProperty("class", "btnOk")
+        self.btn_resume = QPushButton("▶ RESUME")
+        self.btn_resume.setProperty("class", "btnOk btnSm")
+        self.btn_resume.setToolTip("RESUME TRADING — re-verify MT5 link, clear halt flags")
         self.btn_resume.clicked.connect(self.worker.resume)
         for b in (self.btn_panic, self.btn_halt, self.btn_resume):
             lay.addWidget(b)
@@ -505,6 +524,7 @@ class MainWindow(QMainWindow):
     def _build_multi_tab(self) -> QWidget:
         w = QWidget()
         lay = QVBoxLayout(w)
+        lay.setSpacing(6)
         r1 = QHBoxLayout()
         self.m_symbol = QComboBox()
         self.m_side = QComboBox()
@@ -512,30 +532,24 @@ class MainWindow(QMainWindow):
         self.m_tranches = QSpinBox()
         self.m_tranches.setRange(1, 10)
         self.m_tranches.setValue(3)
+        for lbl, ctl in [("Symbol", self.m_symbol), ("Side", self.m_side), ("Tranches", self.m_tranches)]:
+            self._field(r1, lbl, ctl)  # type: ignore[arg-type]
+        lay.addLayout(r1)
         self.m_lots = QDoubleSpinBox()
         self.m_lots.setRange(0.01, 100.0)
         self.m_lots.setSingleStep(0.01)
         self.m_lots.setValue(0.05)
-        for lbl, ctl in [("Symbol", self.m_symbol), ("Side", self.m_side),
-                         ("Tranches", self.m_tranches), ("Lots/tranche", self.m_lots)]:
-            box = QVBoxLayout()
-            box.addWidget(self._lbl(lbl))
-            box.addWidget(ctl)
-            r1.addLayout(box)
-        lay.addLayout(r1)
+        self._field(lay, "Lots / tranche", self.m_lots)
         r2 = QHBoxLayout()
         self.m_sl = QLineEdit()
         self.m_tp = QLineEdit()
+        for lbl, ctl in [("Stop Loss", self.m_sl), ("Take Profit", self.m_tp)]:
+            self._field(r2, lbl, ctl)  # type: ignore[arg-type]
+        lay.addLayout(r2)
         self.btn_multi = QPushButton("EXECUTE LADDER")
         self.btn_multi.setProperty("class", "btnBuy")
         self.btn_multi.clicked.connect(self._cmd_multi)
-        for lbl, ctl in [("SL", self.m_sl), ("TP", self.m_tp)]:
-            box = QVBoxLayout()
-            box.addWidget(self._lbl(lbl))
-            box.addWidget(ctl)
-            r2.addLayout(box)
-        r2.addWidget(self.btn_multi)
-        lay.addLayout(r2)
+        lay.addWidget(self.btn_multi)
         r3 = QHBoxLayout()
         self._batch_buttons(r3, True)
         lay.addLayout(r3)
@@ -548,14 +562,15 @@ class MainWindow(QMainWindow):
     def _build_basket_tab(self) -> QWidget:
         w = QWidget()
         lay = QVBoxLayout(w)
-        r1 = QHBoxLayout()
+        lay.setSpacing(6)
+        r1 = QGridLayout()
         self.basket_checks: dict[str, QCheckBox] = {}
-        for s in self.symbols:
-            cb = QCheckBox(s)
-            cb.setChecked(s in ("EURUSD", "USDJPY"))
-            self.basket_checks[s] = cb
-            r1.addWidget(cb)
-        r1.addStretch(1)
+        for i, sym in enumerate(self.symbols):
+            cb = QCheckBox(sym)
+            cb.setProperty("class", "chkSm")
+            cb.setChecked(sym in ("EURUSD", "USDJPY"))
+            self.basket_checks[sym] = cb
+            r1.addWidget(cb, i // 4, i % 4)
         lay.addLayout(r1)
         r2 = QHBoxLayout()
         self.b_side = QComboBox()
@@ -564,40 +579,59 @@ class MainWindow(QMainWindow):
         self.b_lots.setRange(0.01, 100.0)
         self.b_lots.setSingleStep(0.01)
         self.b_lots.setValue(0.05)
+        for lbl, ctl in [("Side", self.b_side), ("Lots each", self.b_lots)]:
+            self._field(r2, lbl, ctl)  # type: ignore[arg-type]
+        lay.addLayout(r2)
+        r3 = QHBoxLayout()
         self.b_sl = QDoubleSpinBox()
         self.b_sl.setRange(0.1, 10.0)
         self.b_sl.setValue(1.5)
         self.b_rr = QDoubleSpinBox()
         self.b_rr.setRange(0.1, 10.0)
         self.b_rr.setValue(2.0)
-        for lbl, ctl in [("Side", self.b_side), ("Lots each", self.b_lots),
-                         ("SL (×ATR)", self.b_sl), ("TP (R)", self.b_rr)]:
-            box = QVBoxLayout()
-            box.addWidget(self._lbl(lbl))
-            box.addWidget(ctl)
-            r2.addLayout(box)
+        for lbl, ctl in [("SL (×ATR)", self.b_sl), ("TP (R)", self.b_rr)]:
+            self._field(r3, lbl, ctl)  # type: ignore[arg-type]
+        lay.addLayout(r3)
         self.btn_basket = QPushButton("EXECUTE BASKET")
         self.btn_basket.setProperty("class", "btnBuy")
         self.btn_basket.clicked.connect(self._cmd_basket)
-        r2.addWidget(self.btn_basket)
-        lay.addLayout(r2)
-        r3 = QHBoxLayout()
-        self._batch_buttons(r3, False)  # same 4 batch buttons in the basket module
-        lay.addLayout(r3)
+        lay.addWidget(self.btn_basket)
         r4 = QHBoxLayout()
-        self._override_buttons(r4)
+        self._batch_buttons(r4, False)  # same 4 batch buttons in the basket module
         lay.addLayout(r4)
+        r5 = QHBoxLayout()
+        self._override_buttons(r5)
+        lay.addLayout(r5)
         lay.addStretch(1)
         return w
 
     # -------------------------------------------------- bottom console
-    def _build_console(self) -> QTabWidget:
+    def _build_console(self) -> QWidget:
+        wrap = QWidget()
+        wl = QVBoxLayout(wrap)
+        wl.setContentsMargins(0, 0, 0, 0)
+        wl.setSpacing(2)
+        frow = QHBoxLayout()
+        frow.addStretch(1)
+        self.log_filter = "ALL"
+        self.lv_btns = {}
+        for lv, short in [("ALL", "ALL"), ("INFO", "INFO"), ("WARN", "WARN"), ("CRIT", "CRIT")]:
+            b = QPushButton(short)
+            b.setCheckable(True)
+            b.setChecked(lv == "ALL")
+            b.clicked.connect(lambda _=False, x=lv: self._set_log_filter(x))
+            frow.addWidget(b)
+            self.lv_btns[lv] = b
+        wl.addLayout(frow)
         tabs = QTabWidget()
         tabs.setMaximumHeight(280)
+        wl.addWidget(tabs)
 
         jw = QWidget()
         jl = QVBoxLayout(jw)
         self.journal_table = QTableWidget(0, 7)
+        self.journal_table.verticalHeader().setVisible(False)
+        self.journal_table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.journal_table.setHorizontalHeaderLabels(
             ["Time", "Kind", "Symbol", "Side", "Detail", "PnL", "Evidence"])
         self.journal_table.horizontalHeader().setStretchLastSection(True)
@@ -606,18 +640,6 @@ class MainWindow(QMainWindow):
 
         lw = QWidget()
         ll = QVBoxLayout(lw)
-        frow = QHBoxLayout()
-        self.log_filter = "ALL"
-        self.lv_btns = {}
-        for lv in ["ALL", "INFO", "WARNING", "CRITICAL"]:
-            b = QPushButton(lv)
-            b.setCheckable(True)
-            b.setChecked(lv == "ALL")
-            b.clicked.connect(lambda _=False, x=lv: self._set_log_filter(x))
-            frow.addWidget(b)
-            self.lv_btns[lv] = b
-        frow.addStretch(1)
-        ll.addLayout(frow)
         self.logs_list = QListWidget()
         ll.addWidget(self.logs_list, 1)
         tabs.addTab(lw, "🖥 System Logs")
@@ -654,7 +676,7 @@ class MainWindow(QMainWindow):
         dl.addWidget(self.depth_widget, 1)
         tabs.addTab(dw, "📊 Liquidity Depth")
         self.console_tabs = tabs
-        return tabs
+        return wrap
 
     # ================================================================ bindings
     def _refresh_symbols(self) -> None:
@@ -676,13 +698,19 @@ class MainWindow(QMainWindow):
             cb.setParent(None)
             cb.deleteLater()
         self.basket_checks.clear()
-        # rebuild basket checkboxes in place
-        host = self.trade_tabs.widget(2).layout().itemAt(0).layout()
-        for s in self.symbols:
-            cb = QCheckBox(s)
-            cb.setChecked(s in ("EURUSD", "USDJPY"))
-            self.basket_checks[s] = cb
-            host.insertWidget(host.count() - 1, cb)
+        # rebuild basket checkboxes in place (4-column grid)
+        host_item = self.trade_tabs.widget(2).layout().itemAt(0)
+        host = host_item.layout() if host_item is not None else None
+        grid = host if isinstance(host, QGridLayout) else None
+        for i, sym in enumerate(self.symbols):
+            cb = QCheckBox(sym)
+            cb.setProperty("class", "chkSm")
+            cb.setChecked(sym in ("EURUSD", "USDJPY"))
+            self.basket_checks[sym] = cb
+            if grid is not None:
+                grid.addWidget(cb, i // 4, i % 4)
+            elif host is not None:
+                host.addWidget(cb)
 
     def _on_symbol_change(self, s: str) -> None:
         if s:
@@ -983,7 +1011,7 @@ class MainWindow(QMainWindow):
             self.mon_props.addItem("no drift proposals — learning loop stable")
 
     def _render_logs(self, alerts: list[dict]) -> None:
-        lv = self.log_filter
+        lv = {"WARN": "WARNING", "CRIT": "CRITICAL"}.get(self.log_filter, self.log_filter)
         self.logs_list.clear()
         rows = [a for a in alerts[-60:]][::-1]
         from PySide6.QtGui import QColor
@@ -1017,12 +1045,29 @@ class MainWindow(QMainWindow):
         self.journal_table.setRowCount(len(rows))
         for r, e in enumerate(rows):
             p = e.get("payload") or {}
-            sym = p.get("symbol") or (p.get("intent") or {}).get("symbol") or (p.get("trade") or {}).get("symbol") or "—"
-            side = p.get("side") or (p.get("intent") or {}).get("side") or (p.get("trade") or {}).get("side") or ""
+
+            def _dig(obj: object, key: str) -> object:
+                if isinstance(obj, dict):
+                    if obj.get(key) is not None:
+                        return obj[key]
+                    for v in obj.values():
+                        r = _dig(v, key)
+                        if r is not None:
+                            return r
+                elif isinstance(obj, list):
+                    for v in obj:
+                        r = _dig(v, key)
+                        if r is not None:
+                            return r
+                return None
+
+            sym = _dig(p, "symbol") or "—"
+            side = _dig(p, "side") or ""
             if e["kind"] in ("journal.exit", "position.closed"):
-                t = p.get("trade") or p
+                t = p.get("trade") if isinstance(p.get("trade"), dict) else p
                 detail = f"exit {t.get('reason', '')} · vol {t.get('volume', '')}"
-                pnl = f"{t.get('pnl', 0):.2f}" if t.get("pnl") is not None else ""
+                pnl_v = _dig(p, "pnl")
+                pnl = f"{pnl_v:.2f}" if isinstance(pnl_v, (int, float)) else ""
             elif e["kind"] == "journal.execution":
                 i = p.get("intent") or {}
                 detail = f"{i.get('order_type', '')} @ {i.get('price') or 'mkt'} · SL {i.get('stop_loss') or '—'} · TP {i.get('take_profit') or '—'}"
@@ -1034,9 +1079,15 @@ class MainWindow(QMainWindow):
             else:
                 detail = str(p.get("reason", ""))[:60]
                 pnl = ""
-            for c, v in enumerate([(e.get("ts") or "")[:19], e["kind"].replace("journal.", "J:"), str(sym), str(side),
+            kind_disp = e["kind"].replace("journal.", "").replace(".", "_")
+            for c, v in enumerate([(e.get("ts") or "")[:19], kind_disp, str(sym), str(side),
                                    detail, pnl, (e.get("evidence_id") or "")[:10]]):
-                self.journal_table.setItem(r, c, QTableWidgetItem(str(v)))
+                it = QTableWidgetItem(str(v))
+                if c == 1:
+                    from PySide6.QtGui import QColor as _QC
+                    it.setForeground(_QC({"position_closed": "#3FB950", "execution": "#00F0FF",
+                                          "signal": "#FFB800", "risk_veto": "#FF2D55"}.get(kind_disp, "#E8EAF0")))
+                self.journal_table.setItem(r, c, it)
 
     # infra simulators (SIMULATED, labelled)
     def _tick_infra(self, feed_ticks: int) -> None:
