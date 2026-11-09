@@ -89,7 +89,7 @@ class Mt5Worker(QThread):
         """Run a facade command with a live event loop (runtime internals use
         asyncio.get_running_loop()). On the persistent runtime loop when given,
         otherwise a fresh per-job loop (tests / sim fallback)."""
-        async def runner():
+        async def runner() -> Any:
             r = fn()
             if inspect.isawaitable(r):
                 r = await r

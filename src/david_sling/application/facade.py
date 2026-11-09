@@ -97,18 +97,25 @@ class ServiceFacade:
 
     # ------------------------------------------------------------ commands
     def execute_single_trade(self, payload: dict) -> dict:
+        from david_sling.core.errors import ExecutionError
+
         ops: MultiTradeOperationsEngine = self.rt.ops
         acct = self.rt.account_snapshot()
         positions = list(self.rt.broker.account.positions.values())
-        res = ops.single_trade(
-            symbol=payload["symbol"].upper(), side=OrderSide(payload["side"].upper()),
-            volume=payload.get("volume"), order_type=OrderType(payload.get("order_type", "MARKET").upper()),
-            price=payload.get("price"), sl=payload.get("sl"), tp=payload.get("tp"),
-            risk_pct=payload.get("risk_pct"), account=acct, positions=positions,
-            atr_now_fn=self.rt.atr_now, atr_avg_fn=self.rt.atr_avg,
-            spread_now_fn=self.rt.spread_now, spread_avg_fn=self.rt.spread_avg,
-            news_active=self.rt.news_active,
-        )
+        symbol = str(payload["symbol"]).upper()
+        try:
+            res = ops.single_trade(
+                symbol=symbol, side=OrderSide(payload["side"].upper()),
+                volume=payload.get("volume"), order_type=OrderType(payload.get("order_type", "MARKET").upper()),
+                price=payload.get("price"), sl=payload.get("sl"), tp=payload.get("tp"),
+                risk_pct=payload.get("risk_pct"), account=acct, positions=positions,
+                atr_now_fn=self.rt.atr_now, atr_avg_fn=self.rt.atr_avg,
+                spread_now_fn=self.rt.spread_now, spread_avg_fn=self.rt.spread_avg,
+                news_active=self.rt.news_active,
+            )
+        except KeyError as exc:
+            # unknown symbol / side: surface a clear ExecutionError, never a raw KeyError
+            raise ExecutionError(f"unknown symbol or side: {exc}") from exc
         return {"ok": res.ok, "orders": res.orders, "vetoed": res.vetoed, "message": res.message}
 
     def close_position(self, position_id: str, pct: float | None = None) -> dict:

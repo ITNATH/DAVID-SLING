@@ -173,7 +173,7 @@ class MainWindow(QMainWindow):
         lay.addWidget(self.theme_btn)
         return bar
 
-    def _kpi(self, k: str) -> tuple[QLabel, QLabel]:
+    def _kpi(self, k: str) -> tuple[QLabel, QWidget]:
         kk = QLabel(k)
         kk.setProperty("class", "kpiK")
         vv = QLabel("—")
@@ -390,7 +390,7 @@ class MainWindow(QMainWindow):
         lay.addWidget(trade_card)
 
         ctl_card, cv = self._card("🎛 Control Panel — Engine Controls (authorized, ledgered)")
-        self.engine_rows: dict[str, tuple[QLabel, object]] = {}
+        self.engine_rows: dict[str, QCheckBox] = {}
         self.engine_box = QVBoxLayout()
         cv.addLayout(self.engine_box)
         self.control_result = QLabel("config v1 · mutations recorded in evidence ledger")
@@ -650,8 +650,8 @@ class MainWindow(QMainWindow):
         dw = QWidget()
         dl = QVBoxLayout(dw)
         dl.addWidget(self._lbl("Liquidity Pool Depth  [SIMULATED]"))
-        self.depth = DepthWidget()
-        dl.addWidget(self.depth, 1)
+        self.depth_widget = DepthWidget()
+        dl.addWidget(self.depth_widget, 1)
         tabs.addTab(dw, "📊 Liquidity Depth")
         self.console_tabs = tabs
         return tabs
@@ -856,7 +856,7 @@ class MainWindow(QMainWindow):
                     "Regime": f"{aw.get('regime')} ({aw.get('regime_confidence', 0)*100:.0f}%)"}
             for k, v in vals.items():
                 self.aw_labels[k].setText(str(v))
-            self.depth.set_book(aw.get("price", 0), max(aw.get("atr_m1", 0) * 0.25, 1e-9), self.selected)
+            self.depth_widget.set_book(aw.get("price", 0), max(aw.get("atr_m1", 0) * 0.25, 1e-9), self.selected)
         sc = ov.get("scenarios", {}).get(self.selected)
         if sc:
             self.scenario_badge.setText(f"{sc.get('scenario')} · {sc.get('family')}")
@@ -993,7 +993,8 @@ class MainWindow(QMainWindow):
             if lv != "ALL" and a.get("level") != lv:
                 continue
             it = QListWidgetItem(f"{(a.get('ts') or '')[:19]} [{a.get('level')}] {a.get('message')}")
-            it.setForeground(QColor(level_color.get(a.get("level"), "#E8EAF0")))
+            lvl = str(a.get("level") or "INFO")
+            it.setForeground(QColor(level_color.get(lvl, "#E8EAF0")))
             self.logs_list.addItem(it)
 
     def _set_log_filter(self, lv: str) -> None:

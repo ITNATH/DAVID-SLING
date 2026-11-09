@@ -13,7 +13,7 @@ import math
 import random
 
 from PySide6.QtCore import QPointF, Qt, QTimer
-from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QWidget
 
 
@@ -87,7 +87,7 @@ class GlobeWidget(QWidget):
         self.zoom = max(0.6, min(3.2, self.zoom * (1.12 if e.angleDelta().y() > 0 else 0.89)))
         self.set_mode("routes" if self.zoom > 2.4 else "heatmap" if self.zoom > 1.5 else "globe")
 
-    def _project(self, p, R, cx, cy):
+    def _project(self, p: tuple[float, float, float], R: float, cx: float, cy: float) -> tuple[float, float, float]:
         x, y, z = p
         cy1, sy1 = math.cos(self.rot_y), math.sin(self.rot_y)
         cx1, sx1 = math.cos(self.rot_x), math.sin(self.rot_x)
@@ -236,14 +236,18 @@ class EquityWidget(QWidget):
         pts = [QPointF((i / 119) * w, h - ((v - mn) / span) * (h - 14) - 7) for i, v in enumerate(vals)]
         p.setPen(QPen(accent, 1.6))
         p.drawPolyline(pts)
-        p.lineTo(w, h)
-        p.lineTo(0, h)
-        p.closePath()
+        path = QPainterPath()
+        path.moveTo(pts[0])
+        for pt in pts[1:]:
+            path.lineTo(pt)
+        path.lineTo(w, h)
+        path.lineTo(0, h)
+        path.closeSubpath()
         fill = QColor(accent)
         fill.setAlpha(34)
         p.setBrush(fill)
         p.setPen(Qt.PenStyle.NoPen)
-        p.drawPolygon(*pts, QPointF(w, h), QPointF(0, h))
+        p.drawPath(path)
         p.end()
 
 
